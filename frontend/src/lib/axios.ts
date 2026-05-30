@@ -1,20 +1,19 @@
 import axios from 'axios';
-import Cookies from 'js-cookie';
 
 const axiosInstance = axios.create({
   baseURL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api',
-  headers: {
-    'Content-Type': 'application/json',
-  },
+  timeout: 10000,
   withCredentials: true, // Send httpOnly cookies (refreshToken) cross-origin
 });
 
 // Request interceptor: add access token to headers
 axiosInstance.interceptors.request.use(
   (config) => {
-    const token = Cookies.get('accessToken');
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
+    if (typeof window !== 'undefined') {
+      const token = localStorage.getItem('accessToken');
+      if (token) {
+        config.headers.Authorization = `Bearer ${token}`;
+      }
     }
     return config;
   },
@@ -27,6 +26,11 @@ axiosInstance.interceptors.response.use(
   async (error) => {
     const originalRequest = error.config;
 
+    // Tránh loop vô hạn nếu request đang gọi là /auth/refresh
+    if (originalRequest.url === '/auth/refresh') {
+      return Promise.reject(error);
+    }
+
     if (error.response?.status === 401 && !originalRequest._retry) {
       originalRequest._retry = true;
       try {
@@ -37,14 +41,17 @@ axiosInstance.interceptors.response.use(
           { withCredentials: true }
         );
         
+        const newAccessToken = data.data.accessToken;
         // Save new token
-        Cookies.set('accessToken', data.data.accessToken);
+        localStorage.setItem('accessToken', newAccessToken);
+        document.cookie = `accessToken=${newAccessToken}; path=/; max-age=86400`;
         
         // Update header and retry original request
-        originalRequest.headers.Authorization = `Bearer ${data.data.accessToken}`;
+        originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
         return axiosInstance(originalRequest);
       } catch (err) {
-        Cookies.remove('accessToken');
+        localStorage.removeItem('accessToken');
+        document.cookie = 'accessToken=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
         if (typeof window !== 'undefined') {
           window.location.href = '/login';
         }

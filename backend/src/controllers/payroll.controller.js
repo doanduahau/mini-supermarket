@@ -72,4 +72,33 @@ const confirmPayroll = async (req, res, next) => {
   }
 };
 
-module.exports = { getAll, getById, preview, createOrUpdateDraft, createMonthlyPayroll, confirmPayroll };
+const { generatePayrollPDF } = require('../utils/pdfGenerator');
+const Payroll = require('../models/Payroll');
+
+const exportPDF = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const payroll = await Payroll.findById(id).populate('employee', 'fullName email role phone status');
+    
+    if (!payroll) {
+      throw Object.assign(new Error('Không tìm thấy bảng lương'), { statusCode: 404 });
+    }
+
+    // Check permission: employee can only see their own
+    if (req.user.role === 'employee' && payroll.employee._id.toString() !== req.user._id.toString()) {
+      throw Object.assign(new Error('Bạn không có quyền xem phiếu lương này'), { statusCode: 403 });
+    }
+
+    const pdfBuffer = await generatePayrollPDF(payroll, payroll.employee);
+
+    const safeName = payroll.employee.fullName.replace(/\s+/g, '-').toLowerCase();
+    
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename="phieu-luong-${safeName}-${payroll.month}-${payroll.year}.pdf"`);
+    res.send(pdfBuffer);
+  } catch (err) {
+    next(err);
+  }
+};
+
+module.exports = { getAll, getById, preview, createOrUpdateDraft, createMonthlyPayroll, confirmPayroll, exportPDF };

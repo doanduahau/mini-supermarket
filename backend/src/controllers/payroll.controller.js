@@ -73,6 +73,7 @@ const confirmPayroll = async (req, res, next) => {
 };
 
 const { generatePayrollPDF } = require('../utils/pdfGenerator');
+const { generatePayrollExcel } = require('../utils/excelGenerator');
 const Payroll = require('../models/Payroll');
 
 const exportPDF = async (req, res, next) => {
@@ -101,4 +102,24 @@ const exportPDF = async (req, res, next) => {
   }
 };
 
-module.exports = { getAll, getById, preview, createOrUpdateDraft, createMonthlyPayroll, confirmPayroll, exportPDF };
+const exportExcel = async (req, res, next) => {
+  try {
+    const { month, year } = req.query;
+    if (!month || !year) {
+      throw Object.assign(new Error('Vui lòng cung cấp month và year'), { statusCode: 400 });
+    }
+
+    const payrolls = await Payroll.find({ month: Number(month), year: Number(year) })
+      .populate('employee', 'fullName email role status');
+
+    const buffer = await generatePayrollExcel(payrolls, Number(month), Number(year));
+
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.setHeader('Content-Disposition', `attachment; filename="bang-luong-${month}-${year}.xlsx"`);
+    res.send(buffer);
+  } catch (err) {
+    next(err);
+  }
+};
+
+module.exports = { getAll, getById, preview, createOrUpdateDraft, createMonthlyPayroll, confirmPayroll, exportPDF, exportExcel };

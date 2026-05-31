@@ -5,6 +5,7 @@ const { protect, authorize } = require('../middlewares/auth.middleware');
 
 router.get('/',               protect, authorize('supermarket_owner', 'shift_manager'), PayrollController.getAll);
 router.get('/preview',        protect, authorize('supermarket_owner', 'shift_manager'), PayrollController.preview);
+router.get('/export-excel',   protect, authorize('supermarket_owner'), PayrollController.exportExcel);
 router.get('/:id',            protect, authorize('supermarket_owner', 'shift_manager'), PayrollController.getById);
 router.get('/:id/export-pdf', protect, authorize('supermarket_owner', 'shift_manager'), PayrollController.exportPDF);
 

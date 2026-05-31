@@ -6,7 +6,7 @@ import PageHeader from '@/components/layout/PageHeader';
 import { Badge } from '@/components/ui/Badge';
 import { formatCurrency, formatDate } from '@/lib/utils';
 import { Plus, Gift, AlertTriangle, Wallet } from 'lucide-react';
-// import BonusFormModal from './BonusFormModal';
+import BonusFormModal from './BonusFormModal';
 
 export default function BonusClient({ initialData, summary, searchParams }: any) {
   const router = useRouter();
@@ -130,6 +130,8 @@ export default function BonusClient({ initialData, summary, searchParams }: any)
           </table>
         </div>
       </div>
+      
+      {isModalOpen && <BonusFormModal onClose={() => setIsModalOpen(false)} />}
     </>
   );
 }

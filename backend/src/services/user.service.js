@@ -1,4 +1,6 @@
 const { User, ShiftAssignment } = require('../models');
+const { sendMail } = require('../utils/mailer');
+const templates = require('../utils/emailTemplates');
 
 /**
  * List users with optional search/role/status filter + pagination.
@@ -122,6 +124,11 @@ const toggleStatus = async (id, actorId) => {
   user.status = user.status === 'active' ? 'locked' : 'active';
   await user.save();
   
+  if (user.status === 'locked') {
+    const mailOptions = templates.accountLocked({ employeeName: user.fullName });
+    await sendMail({ to: user.email, ...mailOptions });
+  }
+
   return { 
     user: await User.findById(user._id).select('-password -refreshToken'), 
     message: `Đã ${user.status === 'locked' ? 'khóa' : 'mở khóa'} tài khoản` 

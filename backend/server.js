@@ -36,6 +36,10 @@ app.use('/api/bonus',             require('./src/routes/bonus.routes'));
 app.use('/api/payroll',           require('./src/routes/payroll.routes'));
 app.use('/api/reports',           require('./src/routes/report.routes'));
 
+if (process.env.NODE_ENV === 'development' || !process.env.NODE_ENV) {
+  app.use('/api/dev', require('./src/routes/dev.routes'));
+}
+
 // ─── 404 Handler ─────────────────────────────────────────────────────────────
 app.use((req, res) => {
   res.status(404).json({ success: false, message: `Route ${req.originalUrl} not found` });

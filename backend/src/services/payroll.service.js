@@ -1,4 +1,6 @@
 const { User, SalaryConfig, Attendance, Bonus, Payroll } = require('../models');
+const { sendMail } = require('../utils/mailer');
+const templates = require('../utils/emailTemplates');
 
 const calculateForEmployee = async (employeeId, month, year) => {
   const user = await User.findById(employeeId);
@@ -103,14 +105,23 @@ const createMonthlyPayroll = async (month, year, createdBy) => {
   const success = [];
   const failed = [];
 
-  results.forEach((res, index) => {
+  for (let index = 0; index < results.length; index++) {
+    const res = results[index];
     const user = users[index];
     if (res.status === 'fulfilled') {
       success.push({ employee: user._id, payroll: res.value });
+      
+      const mailOptions = templates.payrollReady({
+        employeeName: user.fullName,
+        month, year,
+        netSalary: res.value.netSalary,
+        status: 'draft'
+      });
+      await sendMail({ to: user.email, ...mailOptions });
     } else {
       failed.push({ employee: user._id, reason: res.reason.message || res.reason });
     }
-  });
+  }
 
   return { success, failed };
 };
@@ -126,6 +137,16 @@ const confirmPayroll = async (payrollId, confirmedBy) => {
   payroll.confirmedBy = confirmedBy;
   payroll.confirmedAt = Date.now();
   await payroll.save();
+
+  const populatedPayroll = await Payroll.findById(payroll._id).populate('employee');
+  const mailOptions = templates.payrollReady({
+    employeeName: populatedPayroll.employee.fullName,
+    month: populatedPayroll.month,
+    year: populatedPayroll.year,
+    netSalary: populatedPayroll.netSalary,
+    status: 'confirmed'
+  });
+  await sendMail({ to: populatedPayroll.employee.email, ...mailOptions });
 
   return payroll;
 };

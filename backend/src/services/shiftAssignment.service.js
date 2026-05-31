@@ -1,4 +1,6 @@
 const { ShiftAssignment, Shift, User, Attendance } = require('../models');
+const { sendMail } = require('../utils/mailer');
+const templates = require('../utils/emailTemplates');
 
 const getAll = async ({ date, employeeId, shiftId, status, month, year, page = 1, limit = 20 }) => {
   const query = {};
@@ -132,9 +134,30 @@ const updateStatus = async (id, status, actorId) => {
   assignment.status = status;
   await assignment.save();
 
-  return ShiftAssignment.findById(assignment._id)
+  const populatedAssignment = await ShiftAssignment.findById(assignment._id)
     .populate('employee', 'fullName email role avatar status')
     .populate('shift', 'name startTime endTime');
+
+  if (status === 'approved') {
+    const mailOptions = templates.shiftApproved({
+      employeeName: populatedAssignment.employee.fullName,
+      shiftName: populatedAssignment.shift.name,
+      date: populatedAssignment.date,
+      startTime: populatedAssignment.shift.startTime,
+      endTime: populatedAssignment.shift.endTime
+    });
+    await sendMail({ to: populatedAssignment.employee.email, ...mailOptions });
+  } else if (status === 'rejected') {
+    const mailOptions = templates.shiftRejected({
+      employeeName: populatedAssignment.employee.fullName,
+      shiftName: populatedAssignment.shift.name,
+      date: populatedAssignment.date,
+      reason: 'Quản lý từ chối duyệt ca'
+    });
+    await sendMail({ to: populatedAssignment.employee.email, ...mailOptions });
+  }
+
+  return populatedAssignment;
 };
 
 const selfRegister = async ({ shiftId, date }, employeeId) => {

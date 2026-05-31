@@ -49,31 +49,29 @@ export default async function EmployeeDetailPage(props: { params: Promise<{ id: 
         {/* Cover & Profile Info */}
         <div className="h-40 bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600"></div>
         <div className="px-6 sm:px-10 pb-8">
-          <div className="relative flex flex-col sm:flex-row sm:justify-between sm:items-start -mt-16 sm:-mt-14 mb-8 gap-4">
-            <div className="flex flex-col sm:flex-row sm:items-end gap-5">
+          <div className="relative mb-8">
+            <div className="absolute -top-16 left-0">
               <div className="w-28 h-28 rounded-full bg-white p-1.5 shadow-xl border border-gray-50 shrink-0">
                 <div className="w-full h-full rounded-full bg-gradient-to-tr from-blue-100 to-blue-50 flex items-center justify-center text-4xl font-extrabold text-blue-700">
                   {emp.fullName.charAt(0)}
                 </div>
               </div>
-              <div className="pt-2 sm:pt-14 hidden sm:block">
+            </div>
+            
+            <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start pt-16 sm:pt-3 gap-4">
+              <div className="sm:pl-32">
                 <h1 className="text-3xl font-extrabold text-gray-900 tracking-tight">{emp.fullName}</h1>
                 <p className="text-gray-500 font-medium mt-1">{emp.email}</p>
               </div>
+              <div className="flex gap-2 sm:pt-2">
+                <Badge color={emp.role === 'supermarket_owner' ? 'purple' : emp.role === 'shift_manager' ? 'blue' : 'gray'}>
+                  {emp.role === 'supermarket_owner' ? 'Chủ siêu thị' : emp.role === 'shift_manager' ? 'Quản lý ca' : 'Nhân viên'}
+                </Badge>
+                <Badge color={emp.status === 'active' ? 'green' : 'red'}>
+                  {emp.status === 'active' ? 'Đang hoạt động' : 'Đã khóa'}
+                </Badge>
+              </div>
             </div>
-            <div className="pt-2 sm:pt-14 flex gap-2">
-              <Badge color={emp.role === 'supermarket_owner' ? 'purple' : emp.role === 'shift_manager' ? 'blue' : 'gray'}>
-                {emp.role === 'supermarket_owner' ? 'Chủ siêu thị' : emp.role === 'shift_manager' ? 'Quản lý ca' : 'Nhân viên'}
-              </Badge>
-              <Badge color={emp.status === 'active' ? 'green' : 'red'}>
-                {emp.status === 'active' ? 'Đang hoạt động' : 'Đã khóa'}
-              </Badge>
-            </div>
-          </div>
-          
-          <div className="sm:hidden mb-8">
-            <h1 className="text-2xl font-extrabold text-gray-900">{emp.fullName}</h1>
-            <p className="text-gray-500 font-medium">{emp.email}</p>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 p-6 bg-gray-50/50 rounded-2xl border border-gray-100">

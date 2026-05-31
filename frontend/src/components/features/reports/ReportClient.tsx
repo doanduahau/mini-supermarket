@@ -102,7 +102,7 @@ export default function ReportClient() {
             <span className="text-xs font-bold text-green-600 bg-green-50 px-2 py-1 rounded-lg">+{headcountData.newThisMonth} tháng này</span>
           </div>
           <div>
-            <p className="text-sm font-semibold text-gray-500 mb-1">Nhân sự Active</p>
+            <p className="text-sm font-semibold text-gray-500 mb-1">Nhân sự đang làm việc</p>
             <h3 className="text-3xl font-extrabold text-gray-900">{headcountData.active} <span className="text-base font-medium text-gray-400">/ {headcountData.total}</span></h3>
           </div>
         </div>
@@ -112,7 +112,7 @@ export default function ReportClient() {
             <div className="p-3 bg-green-50 text-green-600 rounded-2xl"><Banknote className="w-6 h-6" /></div>
           </div>
           <div>
-            <p className="text-sm font-semibold text-gray-500 mb-1">Tổng chi lương Net</p>
+            <p className="text-sm font-semibold text-gray-500 mb-1">Tổng lương thực nhận</p>
             <h3 className="text-3xl font-extrabold text-gray-900">{formatCurrency(salaryData.totalNetSalary)}</h3>
           </div>
         </div>
@@ -238,7 +238,7 @@ export default function ReportClient() {
                 <span className="font-bold text-red-600">-{formatCurrency(salaryData.totalPenalty)}</span>
               </div>
               <div className="pt-4 border-t border-gray-200 flex justify-between items-center">
-                <span className="text-lg font-bold text-gray-900">Tổng chi ròng</span>
+                <span className="text-lg font-bold text-gray-900">Tổng lương thực nhận</span>
                 <span className="text-xl font-extrabold text-blue-600">{formatCurrency(salaryData.totalNetSalary)}</span>
               </div>
             </div>

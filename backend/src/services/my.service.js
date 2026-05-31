@@ -33,7 +33,7 @@ const getMySchedule = async (userId, { month, year }) => {
   return result;
 };
 
-const getShiftAvailability = async (startDate, endDate) => {
+const getShiftAvailability = async (startDate, endDate, userId) => {
   const shifts = await Shift.find({}).sort({ startTime: 1 });
   
   const start = new Date(startDate);
@@ -54,10 +54,12 @@ const getShiftAvailability = async (startDate, endDate) => {
     const dayData = {
       date: dStr,
       shifts: shifts.map(s => {
-        const registered = assignments.filter(a => 
+        const registeredAssignments = assignments.filter(a => 
           a.date.toISOString().split('T')[0] === dStr && 
           a.shift.toString() === s._id.toString()
-        ).length;
+        );
+        
+        const isRegisteredByMe = registeredAssignments.some(a => a.employee.toString() === userId.toString());
         
         return {
           _id: s._id,
@@ -65,8 +67,9 @@ const getShiftAvailability = async (startDate, endDate) => {
           startTime: s.startTime,
           endTime: s.endTime,
           maxEmployees: s.maxEmployees,
-          registeredCount: registered,
-          availableCount: Math.max(0, s.maxEmployees - registered)
+          registeredCount: registeredAssignments.length,
+          availableCount: Math.max(0, s.maxEmployees - registeredAssignments.length),
+          isRegisteredByMe
         };
       })
     };

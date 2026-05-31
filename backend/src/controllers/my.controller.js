@@ -35,7 +35,7 @@ const getShiftAvailability = async (req, res, next) => {
     if (!startDate || !endDate) {
       throw Object.assign(new Error('Vui lòng cung cấp startDate và endDate'), { statusCode: 400 });
     }
-    const availability = await MyService.getShiftAvailability(startDate, endDate);
+    const availability = await MyService.getShiftAvailability(startDate, endDate, req.user._id);
     return successResponse(res, availability, 'Lấy thông tin ca trống thành công');
   } catch (err) {
     next(err);

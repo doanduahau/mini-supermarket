@@ -110,22 +110,26 @@ function RegisterModal({ onClose, onSuccess }: { onClose: () => void; onSuccess:
                       {dayData.shifts.map((s: any) => {
                         const isSelected = selected.some(sel => sel.date === dayData.date && sel.shiftId === s._id);
                         const isFull = s.availableCount <= 0;
+                        const isAlreadyRegistered = s.isRegisteredByMe;
                         
                         return (
                           <div 
                             key={s._id} 
-                            onClick={() => !isFull && toggleSelection(dayData.date, s._id)}
-                            className={`p-3 rounded-xl border-2 transition-all cursor-pointer relative overflow-hidden ${
+                            onClick={() => !isFull && !isAlreadyRegistered && toggleSelection(dayData.date, s._id)}
+                            className={`p-3 rounded-xl border-2 transition-all relative overflow-hidden ${
                               isSelected 
-                                ? 'border-blue-500 bg-blue-50/30' 
-                                : isFull
+                                ? 'border-blue-500 bg-blue-50/30 cursor-pointer' 
+                                : isAlreadyRegistered
                                   ? 'border-transparent bg-gray-100 opacity-60 cursor-not-allowed'
-                                  : 'border-transparent bg-white hover:border-blue-200 shadow-sm'
+                                  : isFull
+                                    ? 'border-transparent bg-red-50 opacity-60 cursor-not-allowed'
+                                    : 'border-transparent bg-white hover:border-blue-200 shadow-sm cursor-pointer'
                             }`}
                           >
                             <div className="flex items-start justify-between mb-2">
-                              <p className={`font-bold text-sm ${isSelected ? 'text-blue-700' : 'text-gray-900'}`}>{s.name}</p>
+                              <p className={`font-bold text-sm ${isSelected || isAlreadyRegistered ? 'text-blue-700' : 'text-gray-900'}`}>{s.name}</p>
                               {isSelected && <CheckCircle2 className="w-4 h-4 text-blue-600" />}
+                              {isAlreadyRegistered && <span className="text-[10px] bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded font-bold">Đã ĐK</span>}
                             </div>
                             <p className="text-xs text-gray-500 font-medium mb-2.5 flex items-center gap-1.5">
                               <Clock className="w-3.5 h-3.5" /> {s.startTime} - {s.endTime}

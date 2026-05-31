@@ -14,6 +14,25 @@ export default function EmployeeDetailTabsClient({ employeeId }: EmployeeDetailT
   const [activeTab, setActiveTab] = useState<'general' | 'schedule' | 'attendance'>('general');
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(false);
+  const [payrollSummary, setPayrollSummary] = useState<any>(null);
+
+  useEffect(() => {
+    // always fetch payroll summary for the current month on mount
+    const fetchPayroll = async () => {
+      try {
+        const d = new Date();
+        const month = d.getMonth() + 1;
+        const year = d.getFullYear();
+        const { data: res } = await axiosInstance.get('/payroll/preview', {
+          params: { employeeId, month, year }
+        });
+        setPayrollSummary(res.data);
+      } catch (e) {
+        console.error('Failed to load payroll summary', e);
+      }
+    };
+    fetchPayroll();
+  }, [employeeId]);
 
   useEffect(() => {
     if (activeTab === 'general') return;
@@ -24,15 +43,13 @@ export default function EmployeeDetailTabsClient({ employeeId }: EmployeeDetailT
     setLoading(true);
     try {
       if (tab === 'schedule') {
-        // Fetch upcoming shifts for this employee
         const { data: res } = await axiosInstance.get(`/shift-assignments`, {
-          params: { employeeId, sort: 'date', limit: 30 } // assuming backend supports this
+          params: { employeeId, sort: 'date', limit: 30 }
         });
         setData(res.data);
       } else if (tab === 'attendance') {
-        // Fetch attendance history
         const { data: res } = await axiosInstance.get(`/attendance`, {
-          params: { employeeId, sort: '-date', limit: 30 } // assuming backend supports this
+          params: { employeeId, sort: '-date', limit: 30 }
         });
         setData(res.data);
       }
@@ -88,12 +105,35 @@ export default function EmployeeDetailTabsClient({ employeeId }: EmployeeDetailT
       
       <div className="p-6">
         {activeTab === 'general' && (
-          <div className="text-center text-gray-500 py-10">
-            <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gray-50 mb-4">
-              <User className="w-8 h-8 text-gray-400" />
+          <div className="py-2 animate-in fade-in duration-300">
+            <h3 className="text-lg font-bold text-gray-900 mb-4 px-2">Tổng quan tháng {new Date().getMonth() + 1}</h3>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-8">
+              <div className="bg-blue-50/50 border border-blue-100 rounded-2xl p-6 flex items-center gap-4">
+                <div className="w-12 h-12 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center shrink-0">
+                  <Clock className="w-6 h-6" />
+                </div>
+                <div>
+                  <p className="text-sm font-semibold text-blue-600/80 mb-1">Giờ làm thực tế</p>
+                  <p className="text-2xl font-black text-gray-900">{payrollSummary?.totalHours ?? '--'} <span className="text-sm font-medium text-gray-500">giờ</span></p>
+                </div>
+              </div>
+              <div className="bg-green-50/50 border border-green-100 rounded-2xl p-6 flex items-center gap-4">
+                <div className="w-12 h-12 bg-green-100 text-green-600 rounded-full flex items-center justify-center shrink-0">
+                  <FileText className="w-6 h-6" />
+                </div>
+                <div>
+                  <p className="text-sm font-semibold text-green-600/80 mb-1">Thu nhập dự kiến</p>
+                  <p className="text-2xl font-black text-gray-900">{payrollSummary?.netSalary != null ? payrollSummary.netSalary.toLocaleString() : '--'} <span className="text-sm font-medium text-gray-500">VNĐ</span></p>
+                </div>
+              </div>
             </div>
-            <h3 className="text-lg font-bold text-gray-900 mb-1">Hồ sơ cá nhân</h3>
-            <p className="text-sm">Thông tin cá nhân cơ bản đã được hiển thị đầy đủ ở mục trên.</p>
+            
+            <div className="text-center text-gray-500 py-6 border-t border-gray-100">
+              <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-gray-50 mb-3">
+                <User className="w-6 h-6 text-gray-400" />
+              </div>
+              <p className="text-sm">Thông tin cá nhân cơ bản đã được hiển thị đầy đủ ở phần đầu hồ sơ.</p>
+            </div>
           </div>
         )}
 

@@ -3,7 +3,7 @@ const { sendMail } = require('../utils/mailer');
 const templates = require('../utils/emailTemplates');
 const { sendNotificationToUser } = require('../socket/socket.handler');
 
-const calculateForEmployee = async (employeeId, month, year) => {
+const calculateForEmployee = async (employeeId, month, year, isPreview = false) => {
   const user = await User.findById(employeeId);
   if (!user) throw Object.assign(new Error('Không tìm thấy nhân viên'), { statusCode: 404 });
 
@@ -12,11 +12,11 @@ const calculateForEmployee = async (employeeId, month, year) => {
 
   const config = await SalaryConfig.findOne({
     role: user.role,
-    effectiveFrom: { $lte: startDate }
+    effectiveFrom: { $lte: endDate }
   }).sort({ effectiveFrom: -1 });
 
-  if (!config) {
-    throw Object.assign(new Error(`Chưa có cấu hình lương cho role ${user.role} tháng này`), { statusCode: 400 });
+  if (!config && !isPreview) {
+    throw Object.assign(new Error(`Chưa có cấu hình lương cho vai trò ${user.role}`), { statusCode: 400 });
   }
 
   const attendances = await Attendance.find({
@@ -38,7 +38,8 @@ const calculateForEmployee = async (employeeId, month, year) => {
   });
 
   totalHours = Math.round(totalHours * 100) / 100;
-  const baseSalary = Math.round(totalHours * config.hourlyRate);
+  const hourlyRate = config ? config.hourlyRate : 0;
+  const baseSalary = Math.round(totalHours * hourlyRate);
 
   const bonuses = await Bonus.find({ employee: employeeId, month, year });
 
@@ -76,7 +77,7 @@ const calculateForEmployee = async (employeeId, month, year) => {
 };
 
 const previewPayroll = async (employeeId, month, year) => {
-  return calculateForEmployee(employeeId, month, year);
+  return calculateForEmployee(employeeId, month, year, true);
 };
 
 const createOrUpdateDraft = async (employeeId, month, year, createdBy) => {

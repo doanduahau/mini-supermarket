@@ -5,6 +5,8 @@ import { formatDate } from '@/lib/utils';
 import { User, Phone, Mail, Calendar as CalendarIcon, ArrowLeft, Briefcase, FileText } from 'lucide-react';
 import Link from 'next/link';
 
+import EmployeeDetailTabsClient from './EmployeeDetailTabsClient';
+
 export async function generateMetadata({ params }: any) {
   return { title: 'Hồ sơ Nhân viên | Mini HR' };
 }
@@ -47,19 +49,19 @@ export default async function EmployeeDetailPage(props: { params: Promise<{ id: 
         {/* Cover & Profile Info */}
         <div className="h-40 bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600"></div>
         <div className="px-6 sm:px-10 pb-8">
-          <div className="relative flex flex-col sm:flex-row sm:justify-between sm:items-end -mt-16 sm:-mt-12 mb-8 gap-4">
-            <div className="flex items-end gap-5">
-              <div className="w-28 h-28 rounded-full bg-white p-1.5 shadow-xl border border-gray-50">
+          <div className="relative flex flex-col sm:flex-row sm:justify-between sm:items-start -mt-16 sm:-mt-14 mb-8 gap-4">
+            <div className="flex flex-col sm:flex-row sm:items-end gap-5">
+              <div className="w-28 h-28 rounded-full bg-white p-1.5 shadow-xl border border-gray-50 shrink-0">
                 <div className="w-full h-full rounded-full bg-gradient-to-tr from-blue-100 to-blue-50 flex items-center justify-center text-4xl font-extrabold text-blue-700">
                   {emp.fullName.charAt(0)}
                 </div>
               </div>
-              <div className="pb-3 hidden sm:block">
+              <div className="pt-2 sm:pt-14 hidden sm:block">
                 <h1 className="text-3xl font-extrabold text-gray-900 tracking-tight">{emp.fullName}</h1>
                 <p className="text-gray-500 font-medium mt-1">{emp.email}</p>
               </div>
             </div>
-            <div className="pb-3 flex gap-2">
+            <div className="pt-2 sm:pt-14 flex gap-2">
               <Badge color={emp.role === 'supermarket_owner' ? 'purple' : emp.role === 'shift_manager' ? 'blue' : 'gray'}>
                 {emp.role === 'supermarket_owner' ? 'Chủ siêu thị' : emp.role === 'shift_manager' ? 'Quản lý ca' : 'Nhân viên'}
               </Badge>
@@ -111,28 +113,7 @@ export default async function EmployeeDetailPage(props: { params: Promise<{ id: 
       </div>
       
       {/* Tabs Layout */}
-      <div className="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden">
-        <div className="border-b border-gray-100">
-          <nav className="flex space-x-8 px-6" aria-label="Tabs">
-            <button className="border-b-2 border-blue-600 py-4 px-1 text-sm font-bold text-blue-600 flex items-center gap-2">
-              <User className="w-4 h-4" /> Thông tin chung
-            </button>
-            <button className="border-b-2 border-transparent py-4 px-1 text-sm font-semibold text-gray-500 hover:text-gray-700 hover:border-gray-300 flex items-center gap-2 transition-colors">
-              <Briefcase className="w-4 h-4" /> Lịch làm việc
-            </button>
-            <button className="border-b-2 border-transparent py-4 px-1 text-sm font-semibold text-gray-500 hover:text-gray-700 hover:border-gray-300 flex items-center gap-2 transition-colors">
-              <FileText className="w-4 h-4" /> Lịch sử chấm công
-            </button>
-          </nav>
-        </div>
-        <div className="p-8 text-center text-gray-500">
-          <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gray-50 mb-4">
-            <Briefcase className="w-8 h-8 text-gray-400" />
-          </div>
-          <h3 className="text-lg font-bold text-gray-900 mb-1">Tính năng đang hoàn thiện</h3>
-          <p className="text-sm">Tab này sẽ sớm hiển thị lịch sử ca làm việc và điểm danh của nhân sự.</p>
-        </div>
-      </div>
+      <EmployeeDetailTabsClient employeeId={emp._id} />
     </div>
   );
 }

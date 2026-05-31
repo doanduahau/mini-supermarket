@@ -4,11 +4,13 @@ import React, { useState, useEffect, useCallback } from 'react';
 import PageHeader from '@/components/layout/PageHeader';
 import { Loader2, Calculator, CheckCircle, FileText, Settings, Download } from 'lucide-react';
 import axiosInstance from '@/lib/axios';
+import SalaryConfigModal from './SalaryConfigModal';
 
 export default function SalaryClient() {
   const [payrolls, setPayrolls] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [generating, setGenerating] = useState(false);
+  const [showConfig, setShowConfig] = useState(false);
   const [month, setMonth] = useState(new Date().getMonth() + 1);
   const [year, setYear] = useState(new Date().getFullYear());
 
@@ -73,11 +75,17 @@ export default function SalaryClient() {
         title="Tính lương Nhân viên"
         description="Phân hệ chốt lương, duyệt bảng lương và quản lý thu nhập hàng tháng."
         actions={
-          <button onClick={handleGenerate} disabled={generating}
-            className="bg-blue-600 text-white px-4 py-2.5 rounded-xl text-sm font-bold hover:bg-blue-700 flex items-center gap-2 shadow-sm transition-transform active:scale-95 disabled:opacity-50">
-            {generating ? <Loader2 className="w-5 h-5 animate-spin" /> : <Calculator className="w-5 h-5" />}
-            Tạo bảng lương
-          </button>
+          <div className="flex items-center gap-3">
+            <button onClick={() => setShowConfig(true)}
+              className="bg-white text-gray-700 border border-gray-200 px-4 py-2.5 rounded-xl text-sm font-bold hover:bg-gray-50 flex items-center gap-2 shadow-sm transition-transform active:scale-95">
+              <Settings className="w-5 h-5" /> Cấu hình đơn giá
+            </button>
+            <button onClick={handleGenerate} disabled={generating}
+              className="bg-blue-600 text-white px-4 py-2.5 rounded-xl text-sm font-bold hover:bg-blue-700 flex items-center gap-2 shadow-sm transition-transform active:scale-95 disabled:opacity-50">
+              {generating ? <Loader2 className="w-5 h-5 animate-spin" /> : <Calculator className="w-5 h-5" />}
+              Tạo bảng lương
+            </button>
+          </div>
         }
       />
 
@@ -149,6 +157,8 @@ export default function SalaryClient() {
           </tbody>
         </table>
       </div>
+
+      {showConfig && <SalaryConfigModal onClose={() => setShowConfig(false)} />}
     </div>
   );
 }

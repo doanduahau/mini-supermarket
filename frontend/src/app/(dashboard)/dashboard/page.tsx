@@ -42,17 +42,37 @@ async function fetchStats() {
       stats.missingCheckins = 0; // Mock for layout
       stats.totalSalary = salary?.data?.totalNetSalary || 0;
     } else {
-      const [attendanceRes, salaryRes] = await Promise.all([
+      const [attendanceRes, salaryRes, scheduleRes] = await Promise.all([
         fetch(`${baseUrl}/my/attendance?month=${month}&year=${year}`, { headers: { Authorization: `Bearer ${token}` }, cache: 'no-store' }),
-        fetch(`${baseUrl}/my/estimated-salary?month=${month}&year=${year}`, { headers: { Authorization: `Bearer ${token}` }, cache: 'no-store' })
+        fetch(`${baseUrl}/my/estimated-salary?month=${month}&year=${year}`, { headers: { Authorization: `Bearer ${token}` }, cache: 'no-store' }),
+        fetch(`${baseUrl}/my/schedule?month=${month}&year=${year}`, { headers: { Authorization: `Bearer ${token}` }, cache: 'no-store' })
       ]);
 
       const attendance = attendanceRes.ok ? await attendanceRes.json() : null;
       const salary = salaryRes.ok ? await salaryRes.json() : null;
+      const schedule = scheduleRes.ok ? await scheduleRes.json() : null;
 
-      stats.weeklyShifts = 0;
-      stats.monthlyHours = attendance?.summary?.totalHours || 0;
-      stats.estimatedSalary = salary?.data?.estimatedNet || 0;
+      // Calculate weekly shifts from schedule (assignments within current week)
+      let weeklyShiftsCount = 0;
+      if (schedule?.data) {
+        const today = new Date();
+        const startOfWeek = new Date(today.setDate(today.getDate() - today.getDay() + (today.getDay() === 0 ? -6 : 1))); // Monday
+        startOfWeek.setHours(0, 0, 0, 0);
+        const endOfWeek = new Date(startOfWeek);
+        endOfWeek.setDate(endOfWeek.getDate() + 6);
+        endOfWeek.setHours(23, 59, 59, 999);
+
+        schedule.data.forEach((dayData: any) => {
+          const d = new Date(dayData.date);
+          if (d >= startOfWeek && d <= endOfWeek) {
+            weeklyShiftsCount += dayData.assignments.filter((a: any) => a.status === 'approved').length;
+          }
+        });
+      }
+
+      stats.weeklyShifts = weeklyShiftsCount;
+      stats.monthlyHours = attendance?.data?.summary?.totalHours || 0;
+      stats.estimatedSalary = salary?.data?.netSalary || 0;
     }
     
     return stats;

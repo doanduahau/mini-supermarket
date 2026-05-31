@@ -1,3 +1,5 @@
-export default function Page() {
-  return <div>Placeholder Page</div>;
+import AttendanceClient from '@/components/features/attendance/AttendanceClient';
+
+export default function AttendancePage() {
+  return <AttendanceClient />;
 }

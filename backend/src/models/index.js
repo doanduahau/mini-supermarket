@@ -5,5 +5,6 @@ const Attendance     = require('./Attendance');
 const SalaryConfig   = require('./SalaryConfig');
 const Bonus          = require('./Bonus');
 const Payroll        = require('./Payroll');
+const Setting        = require('./Setting');
 
-module.exports = { User, Shift, ShiftAssignment, Attendance, SalaryConfig, Bonus, Payroll };
+module.exports = { User, Shift, ShiftAssignment, Attendance, SalaryConfig, Bonus, Payroll, Setting };

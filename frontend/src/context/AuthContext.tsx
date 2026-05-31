@@ -53,10 +53,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     const token = localStorage.getItem('accessToken');
     if (token) {
-      setState(prev => ({ ...prev, accessToken: token }));
+      // Set token immediately, then verify with server
+      setState(prev => ({ ...prev, accessToken: token, isLoading: true }));
       refreshUser();
     } else {
-      setState(prev => ({ ...prev, isLoading: false }));
+      // No token: immediately mark as not loading, not authenticated
+      setState({ user: null, accessToken: null, isLoading: false, isAuthenticated: false });
     }
   }, []);
 

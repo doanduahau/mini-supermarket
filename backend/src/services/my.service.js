@@ -1,6 +1,7 @@
 const { User, ShiftAssignment, Attendance, Shift, SalaryConfig, Bonus, Payroll } = require('../models');
 const ShiftAssignmentService = require('./shiftAssignment.service');
 const PayrollService = require('./payroll.service');
+const AttendanceService = require('./attendance.service');
 
 const getMySchedule = async (userId, { month, year }) => {
   const m = month ? parseInt(month) : new Date().getMonth() + 1;
@@ -30,6 +31,50 @@ const getMySchedule = async (userId, { month, year }) => {
   result.sort((a, b) => new Date(a.date) - new Date(b.date));
 
   return result;
+};
+
+const getShiftAvailability = async (startDate, endDate) => {
+  const shifts = await Shift.find({}).sort({ startTime: 1 });
+  
+  const start = new Date(startDate);
+  start.setUTCHours(0, 0, 0, 0);
+  const end = new Date(endDate);
+  end.setUTCHours(23, 59, 59, 999);
+
+  const assignments = await ShiftAssignment.find({
+    date: { $gte: start, $lte: end },
+    status: { $in: ['pending', 'approved'] }
+  });
+
+  const dates = [];
+  let curr = new Date(start);
+  
+  while (curr <= end) {
+    const dStr = curr.toISOString().split('T')[0];
+    const dayData = {
+      date: dStr,
+      shifts: shifts.map(s => {
+        const registered = assignments.filter(a => 
+          a.date.toISOString().split('T')[0] === dStr && 
+          a.shift.toString() === s._id.toString()
+        ).length;
+        
+        return {
+          _id: s._id,
+          name: s.name,
+          startTime: s.startTime,
+          endTime: s.endTime,
+          maxEmployees: s.maxEmployees,
+          registeredCount: registered,
+          availableCount: Math.max(0, s.maxEmployees - registered)
+        };
+      })
+    };
+    dates.push(dayData);
+    curr.setDate(curr.getDate() + 1);
+  }
+
+  return dates;
 };
 
 const getMyAttendance = async (userId, { month, year, page = 1, limit = 20 }) => {
@@ -84,6 +129,22 @@ const getMyAttendance = async (userId, { month, year, page = 1, limit = 20 }) =>
   };
 };
 
+const selfCheckIn = async (attendanceId, userId) => {
+  const attendance = await Attendance.findById(attendanceId);
+  if (!attendance) throw Object.assign(new Error('Không tìm thấy ca trực'), { statusCode: 404 });
+  if (attendance.employee.toString() !== userId.toString()) throw Object.assign(new Error('Không có quyền chấm công ca này'), { statusCode: 403 });
+  
+  return AttendanceService.checkIn(attendanceId, new Date(), userId);
+};
+
+const selfCheckOut = async (attendanceId, userId) => {
+  const attendance = await Attendance.findById(attendanceId);
+  if (!attendance) throw Object.assign(new Error('Không tìm thấy ca trực'), { statusCode: 404 });
+  if (attendance.employee.toString() !== userId.toString()) throw Object.assign(new Error('Không có quyền chấm công ca này'), { statusCode: 403 });
+
+  return AttendanceService.checkOut(attendanceId, new Date(), userId);
+};
+
 const getMyEstimatedSalary = async (userId, { month, year }) => {
   const m = month ? parseInt(month) : new Date().getMonth() + 1;
   const y = year ? parseInt(year) : new Date().getFullYear();
@@ -113,18 +174,48 @@ const updateMyProfile = async (userId, { fullName, phone, avatar }) => {
 };
 
 const selfRegisterShift = async (userId, { shiftId, date }) => {
-  return ShiftAssignmentService.create({
-    employeeId: userId,
-    shiftId,
-    date,
-    note: 'Nhân viên tự đăng ký'
-  }, null);
+  return ShiftAssignmentService.selfRegister({ shiftId, date }, userId);
+};
+
+const selfRegisterBulk = async (userId, assignments) => {
+  const results = [];
+  const errors = [];
+  for (const { shiftId, date } of assignments) {
+    try {
+      const result = await ShiftAssignmentService.selfRegister({ shiftId, date }, userId);
+      results.push(result);
+    } catch (err) {
+      errors.push({ shiftId, date, reason: err.message });
+    }
+  }
+  if (results.length === 0 && errors.length > 0) {
+    throw Object.assign(new Error('Không thể đăng ký các ca đã chọn: ' + errors.map(e => e.reason).join(', ')), { statusCode: 400 });
+  }
+  return { results, errors };
+};
+
+const cancelMyShift = async (userId, assignmentId) => {
+  const assignment = await ShiftAssignment.findById(assignmentId);
+  if (!assignment) throw Object.assign(new Error('Không tìm thấy ca đăng ký'), { statusCode: 404 });
+  if (assignment.employee.toString() !== userId.toString()) {
+    throw Object.assign(new Error('Không có quyền hủy ca này'), { statusCode: 403 });
+  }
+  if (assignment.status !== 'pending') {
+    throw Object.assign(new Error('Chỉ có thể hủy ca đang chờ duyệt'), { statusCode: 400 });
+  }
+  await ShiftAssignment.findByIdAndDelete(assignmentId);
+  return true;
 };
 
 module.exports = {
   getMySchedule,
+  getShiftAvailability,
   getMyAttendance,
+  selfCheckIn,
+  selfCheckOut,
   getMyEstimatedSalary,
   updateMyProfile,
-  selfRegisterShift
+  selfRegisterShift,
+  selfRegisterBulk,
+  cancelMyShift
 };

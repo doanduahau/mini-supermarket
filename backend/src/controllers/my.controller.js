@@ -1,5 +1,7 @@
 const MyService = require('../services/my.service');
 const { successResponse } = require('../utils/response');
+const bcrypt = require('bcryptjs');
+const User = require('../models/User');
 
 const getProfile = async (req, res, next) => {
   try {
@@ -27,6 +29,19 @@ const getSchedule = async (req, res, next) => {
   }
 };
 
+const getShiftAvailability = async (req, res, next) => {
+  try {
+    const { startDate, endDate } = req.query;
+    if (!startDate || !endDate) {
+      throw Object.assign(new Error('Vui lòng cung cấp startDate và endDate'), { statusCode: 400 });
+    }
+    const availability = await MyService.getShiftAvailability(startDate, endDate);
+    return successResponse(res, availability, 'Lấy thông tin ca trống thành công');
+  } catch (err) {
+    next(err);
+  }
+};
+
 const getAttendance = async (req, res, next) => {
   try {
     const { month, year, page, limit } = req.query;
@@ -42,6 +57,24 @@ const getAttendance = async (req, res, next) => {
       200, 
       result.pagination
     );
+  } catch (err) {
+    next(err);
+  }
+};
+
+const selfCheckIn = async (req, res, next) => {
+  try {
+    const attendance = await MyService.selfCheckIn(req.params.id, req.user._id);
+    return successResponse(res, attendance, 'Chấm công vào ca thành công');
+  } catch (err) {
+    next(err);
+  }
+};
+
+const selfCheckOut = async (req, res, next) => {
+  try {
+    const attendance = await MyService.selfCheckOut(req.params.id, req.user._id);
+    return successResponse(res, attendance, 'Chấm công ra ca thành công');
   } catch (err) {
     next(err);
   }
@@ -65,11 +98,62 @@ const selfRegister = async (req, res, next) => {
   }
 };
 
+const selfRegisterBulk = async (req, res, next) => {
+  try {
+    const { assignments } = req.body;
+    if (!Array.isArray(assignments)) throw Object.assign(new Error('Dữ liệu không hợp lệ'), { statusCode: 400 });
+    
+    const results = await MyService.selfRegisterBulk(req.user._id, assignments);
+    return successResponse(res, results, 'Đăng ký ca làm việc thành công', 201);
+  } catch (err) {
+    next(err);
+  }
+};
+
+const cancelSelfRegister = async (req, res, next) => {
+  try {
+    await MyService.cancelMyShift(req.user._id, req.params.id);
+    return successResponse(res, null, 'Hủy đăng ký ca thành công');
+  } catch (err) {
+    next(err);
+  }
+};
+
+const changePassword = async (req, res, next) => {
+  try {
+    const { currentPassword, newPassword } = req.body;
+    if (!currentPassword || !newPassword) {
+      throw Object.assign(new Error('Vui lòng cung cấp mật khẩu hiện tại và mật khẩu mới'), { statusCode: 400 });
+    }
+    if (newPassword.length < 6) {
+      throw Object.assign(new Error('Mật khẩu mới phải có ít nhất 6 ký tự'), { statusCode: 400 });
+    }
+
+    const user = await User.findById(req.user._id).select('+password');
+    const isMatch = await bcrypt.compare(currentPassword, user.password);
+    if (!isMatch) {
+      throw Object.assign(new Error('Mật khẩu hiện tại không đúng'), { statusCode: 400 });
+    }
+
+    user.password = await bcrypt.hash(newPassword, 10);
+    await user.save();
+    return successResponse(res, null, 'Đổi mật khẩu thành công');
+  } catch (err) {
+    next(err);
+  }
+};
+
 module.exports = {
   getProfile,
   updateProfile,
+  changePassword,
   getSchedule,
+  getShiftAvailability,
   getAttendance,
+  selfCheckIn,
+  selfCheckOut,
   getEstimatedSalary,
-  selfRegister
+  selfRegister,
+  selfRegisterBulk,
+  cancelSelfRegister
 };

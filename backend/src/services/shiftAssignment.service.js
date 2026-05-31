@@ -3,10 +3,16 @@ const { sendMail } = require('../utils/mailer');
 const templates = require('../utils/emailTemplates');
 const { sendNotificationToUser } = require('../socket/socket.handler');
 
-const getAll = async ({ date, employeeId, shiftId, status, month, year, page = 1, limit = 20 }) => {
+const getAll = async ({ date, startDate, endDate, employeeId, shiftId, status, month, year, page = 1, limit = 20 }) => {
   const query = {};
 
-  if (date) {
+  if (startDate && endDate) {
+    const s = new Date(startDate);
+    s.setUTCHours(0, 0, 0, 0);
+    const e = new Date(endDate);
+    e.setUTCHours(23, 59, 59, 999);
+    query.date = { $gte: s, $lte: e };
+  } else if (date) {
     const d = new Date(date);
     d.setUTCHours(0, 0, 0, 0);
     const endD = new Date(d);
@@ -66,14 +72,19 @@ const create = async ({ employeeId, shiftId, date, note }, assignedBy) => {
     throw Object.assign(new Error(`Ca ${shift.name} ngày này đã đủ ${shift.maxEmployees} nhân viên`), { statusCode: 400 });
   }
 
-  const existingDate = await ShiftAssignment.findOne({
+  const existingAssignments = await ShiftAssignment.find({
     employee: employeeId,
     date: { $gte: d, $lte: endOfDay },
     status: { $in: ['pending', 'approved'] }
   });
 
-  if (existingDate) {
-    throw Object.assign(new Error('Nhân viên đã có ca làm việc trong ngày này'), { statusCode: 400 });
+  if (existingAssignments.length >= 2) {
+    throw Object.assign(new Error('Nhân viên đã đăng ký tối đa 2 ca trong ngày này'), { statusCode: 400 });
+  }
+
+  const isDuplicateShift = existingAssignments.some(a => a.shift.toString() === shiftId.toString());
+  if (isDuplicateShift) {
+    throw Object.assign(new Error('Nhân viên đã đăng ký ca này trong ngày rồi'), { statusCode: 400 });
   }
 
   const assignment = await ShiftAssignment.create({

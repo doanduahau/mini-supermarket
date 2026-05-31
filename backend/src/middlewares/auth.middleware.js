@@ -22,7 +22,7 @@ const protect = async (req, res, next) => {
       const decoded = verifyAccessToken(token);
       
       // 3. Find user
-      const user = await User.findById(decoded.userId).select('_id email role status');
+      const user = await User.findById(decoded.userId).select('_id email role status fullName phone startDate avatar');
       
       if (!user) {
         return res.status(401).json({ success: false, message: 'Tài khoản không tồn tại' });

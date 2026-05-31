@@ -42,16 +42,13 @@ const attendanceSchema = new mongoose.Schema(
     },
     editHistory: [
       {
-        updatedBy: {
-          type: mongoose.Schema.Types.ObjectId,
-          ref: 'User',
-        },
-        updatedAt: {
-          type: Date,
-        },
-        note: {
-          type: String,
-        },
+        updatedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+        updatedAt: { type: Date, default: Date.now },
+        oldCheckIn: { type: Date },
+        oldCheckOut: { type: Date },
+        newCheckIn: { type: Date },
+        newCheckOut: { type: Date },
+        note: { type: String },
       },
     ],
   },

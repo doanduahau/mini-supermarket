@@ -1,3 +1,5 @@
-export default function Page() {
-  return <div>Placeholder Page</div>;
+import MySalaryClient from '@/components/features/my/MySalaryClient';
+
+export default function MySalaryPage() {
+  return <MySalaryClient />;
 }

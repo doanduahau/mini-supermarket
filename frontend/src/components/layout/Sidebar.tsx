@@ -96,7 +96,7 @@ export default function Sidebar({ isOpen, setIsOpen }: { isOpen: boolean, setIsO
         <div className="p-4 border-t border-gray-100 shrink-0">
           <div className="flex items-center gap-3 mb-4 px-1">
             <div className="h-10 w-10 rounded-full bg-gradient-to-tr from-blue-100 to-blue-50 border border-blue-200 flex items-center justify-center text-blue-700 font-bold flex-shrink-0 shadow-sm">
-              {user.fullName.charAt(0)}
+              {user?.fullName?.charAt(0) || '?'}
             </div>
             <div className="md:hidden lg:block overflow-hidden">
               <p className="text-sm font-bold text-gray-900 truncate">{user.fullName}</p>

@@ -26,6 +26,7 @@ const getAll = async ({ date, employeeId, shiftId, month, year, page = 1, limit 
     Attendance.find(query)
       .populate('employee', 'fullName email avatar role')
       .populate('shift', 'name startTime endTime')
+      .populate('editHistory.updatedBy', 'fullName')
       .sort({ date: -1, 'shift.startTime': 1 })
       .skip(skip)
       .limit(limit),
@@ -92,6 +93,9 @@ const manualUpdate = async (id, { checkIn, checkOut, note }, updatedBy) => {
   const attendance = await Attendance.findById(id);
   if (!attendance) throw Object.assign(new Error('Không tìm thấy bản ghi chấm công'), { statusCode: 404 });
 
+  const oldCheckIn = attendance.checkIn;
+  const oldCheckOut = attendance.checkOut;
+
   if (checkIn) attendance.checkIn = new Date(checkIn);
   if (checkOut) attendance.checkOut = new Date(checkOut);
 
@@ -107,6 +111,10 @@ const manualUpdate = async (id, { checkIn, checkOut, note }, updatedBy) => {
   attendance.editHistory.push({
     updatedBy,
     updatedAt: new Date(),
+    oldCheckIn,
+    oldCheckOut,
+    newCheckIn: attendance.checkIn,
+    newCheckOut: attendance.checkOut,
     note
   });
 

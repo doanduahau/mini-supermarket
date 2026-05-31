@@ -15,7 +15,7 @@ export default function SalaryClient() {
   const fetchData = useCallback(async () => {
     setLoading(true);
     try {
-      const { data } = await axiosInstance.get(`/payrolls?month=${month}&year=${year}`);
+      const { data } = await axiosInstance.get(`/payroll?month=${month}&year=${year}`);
       setPayrolls(data.data || []);
     } catch (e) {
       console.error(e);
@@ -30,7 +30,7 @@ export default function SalaryClient() {
     if (!confirm(`Tạo bảng lương cho tháng ${month}/${year}? Thao tác này sẽ ghi đè các bản nháp cũ.`)) return;
     setGenerating(true);
     try {
-      await axiosInstance.post('/payrolls/calculate-all', { month, year });
+      await axiosInstance.post('/payroll/calculate-all', { month, year });
       alert('Tạo bảng lương thành công!');
       fetchData();
     } catch (e: any) {
@@ -43,7 +43,7 @@ export default function SalaryClient() {
   const handleConfirm = async (id: string) => {
     if (!confirm('Chốt bảng lương này? Sau khi chốt sẽ không thể tính lại.')) return;
     try {
-      await axiosInstance.patch(`/payrolls/${id}/confirm`);
+      await axiosInstance.patch(`/payroll/${id}/confirm`);
       fetchData();
     } catch (e: any) {
       alert(e?.response?.data?.message || 'Có lỗi xảy ra');
@@ -52,7 +52,7 @@ export default function SalaryClient() {
 
   const handleExportPDF = async (id: string) => {
     try {
-      const res = await axiosInstance.get(`/payrolls/${id}/export-pdf`, { responseType: 'blob' });
+      const res = await axiosInstance.get(`/payroll/${id}/export-pdf`, { responseType: 'blob' });
       const url = window.URL.createObjectURL(new Blob([res.data]));
       const link = document.createElement('a');
       link.href = url;

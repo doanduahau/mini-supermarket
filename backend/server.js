@@ -49,6 +49,7 @@ app.use('/api/bonus',             require('./src/routes/bonus.routes'));
 app.use('/api/payroll',           require('./src/routes/payroll.routes'));
 app.use('/api/reports',           require('./src/routes/report.routes'));
 app.use('/api/settings',          require('./src/routes/settings.routes'));
+app.use('/api/announcements',     require('./src/routes/announcement.routes'));
 
 if (process.env.NODE_ENV === 'development' || !process.env.NODE_ENV) {
   app.use('/api/dev', require('./src/routes/dev.routes'));

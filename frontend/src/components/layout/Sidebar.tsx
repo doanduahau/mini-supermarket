@@ -16,11 +16,13 @@ import {
   Clock,
   Banknote,
   LogOut,
+  Bell,
 } from 'lucide-react';
 import { ROLE_LABELS } from '@/lib/constants';
 
 const MENU_ITEMS = [
   { label: 'Dashboard', href: '/dashboard', icon: LayoutDashboard, roles: ['supermarket_owner', 'shift_manager', 'employee'] },
+  { label: 'Thông báo', href: '/announcements', icon: Bell, roles: ['supermarket_owner', 'shift_manager', 'employee'] },
   
   { label: 'Nhân viên', href: '/employees', icon: Users, roles: ['supermarket_owner', 'shift_manager'] },
   { label: 'Ca làm việc', href: '/shifts', icon: Calendar, roles: ['supermarket_owner', 'shift_manager'] },

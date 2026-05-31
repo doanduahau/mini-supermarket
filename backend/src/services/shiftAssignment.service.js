@@ -82,28 +82,39 @@ const create = async ({ employeeId, shiftId, date, note }, assignedBy) => {
     throw Object.assign(new Error('Nhân viên đã đăng ký tối đa 2 ca trong ngày này'), { statusCode: 400 });
   }
 
-  const isDuplicateShift = existingAssignments.some(a => a.shift.toString() === shiftId.toString());
-  if (isDuplicateShift) {
-    throw Object.assign(new Error('Nhân viên đã đăng ký ca này trong ngày rồi'), { statusCode: 400 });
-  }
+  let assignment = await ShiftAssignment.findOne({ employee: employeeId, shift: shiftId, date: d });
 
-  const assignment = await ShiftAssignment.create({
-    employee: employeeId,
-    shift: shiftId,
-    date: d,
-    status: assignedBy ? 'approved' : 'pending',
-    assignedBy,
-    note
-  });
-
-  // If approved upon creation, also spawn an empty Attendance
-  if (assignedBy) {
-    await Attendance.create({
+  if (assignment) {
+    if (['pending', 'approved'].includes(assignment.status)) {
+      throw Object.assign(new Error('Nhân viên đã đăng ký ca này trong ngày rồi'), { statusCode: 400 });
+    }
+    // If rejected, resurrect it
+    assignment.status = assignedBy ? 'approved' : 'pending';
+    assignment.assignedBy = assignedBy;
+    assignment.note = note;
+    await assignment.save();
+  } else {
+    assignment = await ShiftAssignment.create({
       employee: employeeId,
       shift: shiftId,
       date: d,
-      recordedBy: assignedBy
+      status: assignedBy ? 'approved' : 'pending',
+      assignedBy,
+      note
     });
+  }
+
+  // If approved upon creation/resurrection, spawn an empty Attendance if not exists
+  if (assignedBy) {
+    const existingAtt = await Attendance.findOne({ employee: employeeId, shift: shiftId, date: d });
+    if (!existingAtt) {
+      await Attendance.create({
+        employee: employeeId,
+        shift: shiftId,
+        date: d,
+        recordedBy: assignedBy
+      });
+    }
   }
 
   return ShiftAssignment.findById(assignment._id)

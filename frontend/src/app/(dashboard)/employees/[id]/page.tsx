@@ -9,7 +9,8 @@ export async function generateMetadata({ params }: any) {
   return { title: 'Hồ sơ Nhân viên | Mini HR' };
 }
 
-export default async function EmployeeDetailPage({ params }: { params: { id: string } }) {
+export default async function EmployeeDetailPage(props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   const cookieStore = await cookies();
   const token = cookieStore.get('accessToken')?.value;
   
@@ -19,6 +20,7 @@ export default async function EmployeeDetailPage({ params }: { params: { id: str
   });
   
   if (!res.ok) {
+    console.log('Employee API failed:', res.status, await res.text());
     return (
       <div className="p-10 flex flex-col items-center justify-center bg-white rounded-3xl border border-red-100 shadow-sm">
         <div className="w-16 h-16 bg-red-50 text-red-500 rounded-full flex items-center justify-center mb-4">

@@ -3,12 +3,27 @@ const mongoose = require('mongoose');
 const dns = require('dns');
 dns.setServers(['8.8.8.8', '8.8.4.4']);
 mongoose.connect(process.env.MONGODB_URI);
-const ShiftAssignment = mongoose.model('ShiftAssignment', new mongoose.Schema({}, { strict: false }));
-const Shift = mongoose.model('Shift', new mongoose.Schema({}, { strict: false }));
+const User = require('./src/models/User');
+
 async function test() {
-  const shift = await Shift.findOne({ name: 'Ca chiều' });
-  const docs = await ShiftAssignment.find({ date: { $gte: new Date('2026-06-03T00:00:00Z'), $lte: new Date('2026-06-03T23:59:59Z') }, status: { $in: ['pending', 'approved'] }, shift: shift._id });
-  console.log('Total on June 3:', docs.length);
+  const user = await User.findOne({ role: 'employee' });
+  console.log('Testing User ID:', user._id.toString());
+  
+  // Create a token for admin
+  const admin = await User.findOne({ role: 'supermarket_owner' });
+  const jwt = require('jsonwebtoken');
+  const token = jwt.sign({ userId: admin._id, role: admin.role }, process.env.JWT_SECRET || 'secret', { expiresIn: '1d' });
+
+  // Now fetch using the exact fetch code
+  try {
+    const res = await fetch(`http://localhost:5000/api/users/${user._id}`, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    console.log('Status:', res.status);
+    console.log('Body:', await res.text());
+  } catch(e) {
+    console.error('Fetch error:', e.message);
+  }
   process.exit();
 }
 test();

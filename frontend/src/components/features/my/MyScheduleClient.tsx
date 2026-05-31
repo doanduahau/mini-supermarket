@@ -38,8 +38,9 @@ function RegisterModal({ onClose, onSuccess }: { onClose: () => void; onSuccess:
     const nextSunday = new Date(nextMonday);
     nextSunday.setDate(nextSunday.getDate() + 6);
     
-    const sDate = nextMonday.toISOString().split('T')[0];
-    const eDate = nextSunday.toISOString().split('T')[0];
+    const pad = (n: number) => n.toString().padStart(2, '0');
+    const sDate = `${nextMonday.getFullYear()}-${pad(nextMonday.getMonth() + 1)}-${pad(nextMonday.getDate())}`;
+    const eDate = `${nextSunday.getFullYear()}-${pad(nextSunday.getMonth() + 1)}-${pad(nextSunday.getDate())}`;
 
     axiosInstance.get('/my/shift-availability', { params: { startDate: sDate, endDate: eDate } })
       .then(({ data }) => { setAvailability(data.data || []); setLoading(false); })

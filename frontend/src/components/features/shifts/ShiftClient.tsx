@@ -327,8 +327,8 @@ export default function ShiftClient({ initialShifts }: { initialShifts: Shift[] 
 
   const fetchAssignments = useCallback(async () => {
     try {
-      const sDate = weekDays[0].toISOString();
-      const eDate = weekDays[6].toISOString();
+      const sDate = format(weekDays[0], 'yyyy-MM-dd');
+      const eDate = format(weekDays[6], 'yyyy-MM-dd');
       const { data } = await axiosInstance.get('/shift-assignments', { params: { startDate: sDate, endDate: eDate, limit: 1000 } });
       setAssignments(data.data || []);
       

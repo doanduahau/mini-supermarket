@@ -5,6 +5,7 @@ import { usePathname } from 'next/navigation';
 import { Menu, ChevronRight, User as UserIcon, Key, LogOut } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu';
+import NotificationBell from './NotificationBell';
 
 const ROUTE_NAMES: Record<string, string> = {
   dashboard: 'Dashboard',
@@ -56,6 +57,9 @@ export default function Navbar({ toggleSidebar }: { toggleSidebar: () => void })
       </div>
 
       <div className="flex items-center gap-4">
+        {user?.role === 'employee' && user._id && (
+          <NotificationBell userId={user._id} />
+        )}
         <DropdownMenu.Root>
           <DropdownMenu.Trigger asChild>
             <button className="flex items-center gap-2 hover:bg-gray-50 p-1 rounded-full outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-all">

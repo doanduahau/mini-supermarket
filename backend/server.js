@@ -5,9 +5,22 @@ const helmet = require('helmet');
 const morgan = require('morgan');
 const cookieParser = require('cookie-parser');
 const connectDB = require('./src/config/db');
+const { createServer } = require('http');
+const { Server } = require('socket.io');
+const { initSocket } = require('./src/socket/socket.handler');
 
 const app = express();
+const httpServer = createServer(app);
+const io = new Server(httpServer, {
+  cors: {
+    origin: process.env.CLIENT_URL || '*',
+    methods: ['GET', 'POST'],
+    credentials: true
+  }
+});
 
+// Initialize socket handlers
+initSocket(io);
 // ─── Connect Database ───────────────────────────────────────────────────────
 connectDB();
 
@@ -60,6 +73,6 @@ app.use((err, req, res, next) => {
 
 // ─── Start Server ─────────────────────────────────────────────────────────────
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => {
-  console.log(`🚀 Server running in ${process.env.NODE_ENV || 'development'} mode on port ${PORT}`);
+httpServer.listen(PORT, () => {
+  console.log(`🚀 Server + Socket.io running in ${process.env.NODE_ENV || 'development'} mode on port ${PORT}`);
 });

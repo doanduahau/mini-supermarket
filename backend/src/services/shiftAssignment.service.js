@@ -1,6 +1,7 @@
 const { ShiftAssignment, Shift, User, Attendance } = require('../models');
 const { sendMail } = require('../utils/mailer');
 const templates = require('../utils/emailTemplates');
+const { sendNotificationToUser } = require('../socket/socket.handler');
 
 const getAll = async ({ date, employeeId, shiftId, status, month, year, page = 1, limit = 20 }) => {
   const query = {};
@@ -156,6 +157,21 @@ const updateStatus = async (id, status, actorId) => {
     });
     await sendMail({ to: populatedAssignment.employee.email, ...mailOptions });
   }
+
+  sendNotificationToUser(
+    populatedAssignment.employee._id,
+    status === 'approved' ? 'notification:shift_approved' : 'notification:shift_rejected',
+    {
+      assignmentId: populatedAssignment._id,
+      shiftName: populatedAssignment.shift.name,
+      date: populatedAssignment.date,
+      startTime: populatedAssignment.shift.startTime,
+      endTime: populatedAssignment.shift.endTime,
+      message: status === 'approved' 
+        ? `Ca ${populatedAssignment.shift.name} ngày ${new Date(populatedAssignment.date).toLocaleDateString('vi-VN')} đã được duyệt` 
+        : `Ca ${populatedAssignment.shift.name} ngày ${new Date(populatedAssignment.date).toLocaleDateString('vi-VN')} bị từ chối`
+    }
+  );
 
   return populatedAssignment;
 };

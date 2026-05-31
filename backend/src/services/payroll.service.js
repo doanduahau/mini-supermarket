@@ -1,6 +1,7 @@
 const { User, SalaryConfig, Attendance, Bonus, Payroll } = require('../models');
 const { sendMail } = require('../utils/mailer');
 const templates = require('../utils/emailTemplates');
+const { sendNotificationToUser } = require('../socket/socket.handler');
 
 const calculateForEmployee = async (employeeId, month, year) => {
   const user = await User.findById(employeeId);
@@ -118,6 +119,17 @@ const createMonthlyPayroll = async (month, year, createdBy) => {
         status: 'draft'
       });
       await sendMail({ to: user.email, ...mailOptions });
+
+      sendNotificationToUser(
+        user._id,
+        'notification:payroll_ready',
+        {
+          payrollId: res.value._id,
+          month, year,
+          netSalary: res.value.netSalary,
+          message: `Phiếu lương dự kiến tháng ${month}/${year} đã sẵn sàng`
+        }
+      );
     } else {
       failed.push({ employee: user._id, reason: res.reason.message || res.reason });
     }
@@ -147,6 +159,18 @@ const confirmPayroll = async (payrollId, confirmedBy) => {
     status: 'confirmed'
   });
   await sendMail({ to: populatedPayroll.employee.email, ...mailOptions });
+
+  sendNotificationToUser(
+    populatedPayroll.employee._id,
+    'notification:payroll_ready',
+    {
+      payrollId: populatedPayroll._id,
+      month: populatedPayroll.month,
+      year: populatedPayroll.year,
+      netSalary: populatedPayroll.netSalary,
+      message: `Phiếu lương chính thức tháng ${populatedPayroll.month}/${populatedPayroll.year} đã được chốt`
+    }
+  );
 
   return payroll;
 };

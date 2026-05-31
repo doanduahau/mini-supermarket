@@ -579,7 +579,7 @@ export default function ShiftClient({ initialShifts }: { initialShifts: Shift[] 
           onClose={() => setSelectedCell(null)} 
           onUpdateStatus={async (id, status) => {
             try {
-              await axiosInstance.put(`/shift-assignments/${id}/status`, { status });
+              await axiosInstance.patch(`/shift-assignments/${id}/status`, { status });
               fetchAssignments();
             } catch (e: any) { alert(e?.response?.data?.message || 'Lỗi cập nhật'); }
           }}

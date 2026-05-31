@@ -20,7 +20,11 @@ export default function SalaryConfigModal({ onClose }: { onClose: () => void }) 
   const [form, setForm] = useState({
     role: 'employee',
     hourlyRate: '',
-    effectiveFrom: new Date().toISOString().split('T')[0]
+    effectiveFrom: (() => {
+      const pad = (n: number) => n.toString().padStart(2, '0');
+      const d = new Date();
+      return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+    })()
   });
 
   const fetchData = async () => {

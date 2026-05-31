@@ -585,7 +585,7 @@ export default function ShiftClient({ initialShifts }: { initialShifts: Shift[] 
           }}
           onAssign={async (empId) => {
             try {
-              await axiosInstance.post('/shift-assignments', { shiftId: selectedCell.shift._id, employeeId: empId, date: selectedCell.date.toISOString(), status: 'approved' });
+              await axiosInstance.post('/shift-assignments', { shiftId: selectedCell.shift._id, employeeId: empId, date: format(selectedCell.date, 'yyyy-MM-dd'), status: 'approved' });
               fetchAssignments();
             } catch (e: any) { alert(e?.response?.data?.message || 'Lỗi xếp ca'); }
           }}

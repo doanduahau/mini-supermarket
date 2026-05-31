@@ -64,10 +64,10 @@ export default async function EmployeeDetailPage(props: { params: Promise<{ id: 
                 <p className="text-gray-500 font-medium mt-1">{emp.email}</p>
               </div>
               <div className="flex gap-2 sm:pt-2">
-                <Badge color={emp.role === 'supermarket_owner' ? 'purple' : emp.role === 'shift_manager' ? 'blue' : 'gray'}>
+                <Badge variant={emp.role === 'supermarket_owner' ? 'info' : emp.role === 'shift_manager' ? 'info' : 'gray'}>
                   {emp.role === 'supermarket_owner' ? 'Chủ siêu thị' : emp.role === 'shift_manager' ? 'Quản lý ca' : 'Nhân viên'}
                 </Badge>
-                <Badge color={emp.status === 'active' ? 'green' : 'red'}>
+                <Badge variant={emp.status === 'active' ? 'success' : 'error'}>
                   {emp.status === 'active' ? 'Đang hoạt động' : 'Đã khóa'}
                 </Badge>
               </div>

@@ -108,7 +108,7 @@ export default function BonusClient({ initialData, summary, searchParams }: any)
                   <td className="px-6 py-4 font-bold text-gray-900">{item.employee.fullName}</td>
                   <td className="px-6 py-4 font-medium">{item.month}/{item.year}</td>
                   <td className="px-6 py-4">
-                    <Badge color={item.type === 'bonus' ? 'green' : 'red'}>
+                    <Badge variant={item.type === 'bonus' ? 'success' : 'error'}>
                       {item.type === 'bonus' ? 'Thưởng' : 'Phạt'}
                     </Badge>
                   </td>

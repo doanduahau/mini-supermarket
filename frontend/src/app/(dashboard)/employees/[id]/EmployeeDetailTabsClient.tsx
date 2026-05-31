@@ -62,10 +62,10 @@ export default function EmployeeDetailTabsClient({ employeeId }: EmployeeDetailT
 
   const getStatusBadge = (status: string) => {
     switch(status) {
-      case 'approved': return <Badge color="green">Đã duyệt</Badge>;
-      case 'pending': return <Badge color="yellow">Chờ duyệt</Badge>;
-      case 'rejected': return <Badge color="red">Từ chối</Badge>;
-      default: return <Badge color="gray">{status}</Badge>;
+      case 'approved': return <Badge variant="success">Đã duyệt</Badge>;
+      case 'pending': return <Badge variant="warning">Chờ duyệt</Badge>;
+      case 'rejected': return <Badge variant="error">Từ chối</Badge>;
+      default: return <Badge variant="gray">{status}</Badge>;
     }
   };
 

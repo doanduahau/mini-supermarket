@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
 import PageHeader from '@/components/layout/PageHeader';
-import { Plus, Search, MoreVertical, Edit, Lock, Unlock, Eye } from 'lucide-react';
+import { Plus, Search, MoreVertical, Edit, Lock, Unlock, Eye, Users } from 'lucide-react';
 import { Badge } from '@/components/ui/Badge';
 import Link from 'next/link';
 import EmployeeFormModal from './EmployeeFormModal';
@@ -109,14 +109,14 @@ export default function EmployeeListClient({ initialData, meta, searchParams }: 
                     </div>
                   </td>
                   <td className="px-6 py-4">
-                    <Badge color={emp.role === 'supermarket_owner' ? 'purple' : emp.role === 'shift_manager' ? 'blue' : 'gray'}>
+                    <Badge variant={emp.role === 'supermarket_owner' ? 'info' : emp.role === 'shift_manager' ? 'info' : 'gray'}>
                       {emp.role === 'supermarket_owner' ? 'Chủ ST' : emp.role === 'shift_manager' ? 'Quản lý' : 'Nhân viên'}
                     </Badge>
                   </td>
                   <td className="px-6 py-4 font-medium">{emp.phone || '-'}</td>
                   <td className="px-6 py-4">{formatDate(emp.createdAt)}</td>
                   <td className="px-6 py-4">
-                    <Badge color={emp.status === 'active' ? 'green' : 'red'}>
+                    <Badge variant={emp.status === 'active' ? 'success' : 'error'}>
                       {emp.status === 'active' ? 'Đang HĐ' : 'Đã khóa'}
                     </Badge>
                   </td>

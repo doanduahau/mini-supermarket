@@ -126,7 +126,7 @@ const toggleStatus = async (id, actorId) => {
   
   if (user.status === 'locked') {
     const mailOptions = templates.accountLocked({ employeeName: user.fullName });
-    await sendMail({ to: user.email, ...mailOptions });
+    sendMail({ to: user.email, ...mailOptions });
   }
 
   return { 

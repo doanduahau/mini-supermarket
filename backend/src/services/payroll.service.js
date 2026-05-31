@@ -118,7 +118,7 @@ const createMonthlyPayroll = async (month, year, createdBy) => {
         netSalary: res.value.netSalary,
         status: 'draft'
       });
-      await sendMail({ to: user.email, ...mailOptions });
+      sendMail({ to: user.email, ...mailOptions });
 
       sendNotificationToUser(
         user._id,
@@ -158,7 +158,7 @@ const confirmPayroll = async (payrollId, confirmedBy) => {
     netSalary: populatedPayroll.netSalary,
     status: 'confirmed'
   });
-  await sendMail({ to: populatedPayroll.employee.email, ...mailOptions });
+  sendMail({ to: populatedPayroll.employee.email, ...mailOptions });
 
   sendNotificationToUser(
     populatedPayroll.employee._id,

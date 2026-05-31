@@ -158,7 +158,7 @@ const updateStatus = async (id, status, actorId) => {
       startTime: populatedAssignment.shift.startTime,
       endTime: populatedAssignment.shift.endTime
     });
-    await sendMail({ to: populatedAssignment.employee.email, ...mailOptions });
+    sendMail({ to: populatedAssignment.employee.email, ...mailOptions });
   } else if (status === 'rejected') {
     const mailOptions = templates.shiftRejected({
       employeeName: populatedAssignment.employee.fullName,
@@ -166,7 +166,7 @@ const updateStatus = async (id, status, actorId) => {
       date: populatedAssignment.date,
       reason: 'Quản lý từ chối duyệt ca'
     });
-    await sendMail({ to: populatedAssignment.employee.email, ...mailOptions });
+    sendMail({ to: populatedAssignment.employee.email, ...mailOptions });
   }
 
   sendNotificationToUser(

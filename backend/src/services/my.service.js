@@ -132,6 +132,8 @@ const getMyAttendance = async (userId, { month, year, page = 1, limit = 20 }) =>
     Attendance.countDocuments(query)
   ]);
 
+  await AttendanceService.processAutoCheckOut(attendance);
+
   return {
     attendance,
     summary,

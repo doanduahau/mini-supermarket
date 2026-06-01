@@ -33,6 +33,8 @@ const getAll = async ({ date, employeeId, shiftId, month, year, page = 1, limit 
     Attendance.countDocuments(query),
   ]);
 
+  await processAutoCheckOut(attendances);
+
   return {
     attendances,
     pagination: { total, page, limit, totalPages: Math.ceil(total / limit) }
@@ -56,12 +58,67 @@ const calcActualHours = (checkIn, checkOut) => {
   return Math.round(diff * 100) / 100;
 };
 
+const processAutoCheckOut = async (attendances) => {
+  const now = new Date();
+  const updates = [];
+
+  for (const att of attendances) {
+    if (att.checkIn && !att.checkOut && att.shift && att.shift.endTime) {
+      const [endH, endM] = att.shift.endTime.split(':').map(Number);
+      const shiftEndTime = new Date(att.date);
+      shiftEndTime.setHours(endH, endM, 0, 0);
+
+      if (att.shift.startTime) {
+        const [startH] = att.shift.startTime.split(':').map(Number);
+        if (endH < startH) {
+          shiftEndTime.setDate(shiftEndTime.getDate() + 1);
+        }
+      }
+
+      const diffMinutes = (now.getTime() - shiftEndTime.getTime()) / 60000;
+
+      if (diffMinutes > 30) {
+        att.checkOut = shiftEndTime;
+        att.actualHours = calcActualHours(att.checkIn, att.checkOut);
+        att.note = (att.note ? att.note + '\n' : '') + '[Hệ thống tự động Check-out]';
+
+        updates.push(
+          Attendance.updateOne(
+            { _id: att._id },
+            { $set: { checkOut: att.checkOut, actualHours: att.actualHours, note: att.note } }
+          )
+        );
+      }
+    }
+  }
+
+  if (updates.length > 0) {
+    await Promise.all(updates);
+  }
+  return attendances;
+};
+
 const checkIn = async (attendanceId, checkInTime, recordedBy) => {
-  const attendance = await Attendance.findById(attendanceId);
+  const attendance = await Attendance.findById(attendanceId).populate('shift');
   if (!attendance) throw Object.assign(new Error('Không tìm thấy bản ghi chấm công'), { statusCode: 404 });
   if (attendance.checkIn) throw Object.assign(new Error('Nhân viên đã được check-in'), { statusCode: 400 });
 
-  attendance.checkIn = checkInTime ? new Date(checkInTime) : new Date();
+  const cIn = checkInTime ? new Date(checkInTime) : new Date();
+
+  if (attendance.shift && attendance.shift.startTime) {
+    const [startH, startM] = attendance.shift.startTime.split(':').map(Number);
+    const shiftStartTime = new Date(attendance.date);
+    shiftStartTime.setHours(startH, startM, 0, 0);
+
+    const timeDiffMs = shiftStartTime.getTime() - cIn.getTime();
+    if (timeDiffMs > 60 * 60 * 1000) {
+      const minStart = new Date(shiftStartTime.getTime() - 60 * 60 * 1000);
+      const minTimeStr = minStart.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
+      throw Object.assign(new Error(`Chỉ có thể vào ca sớm tối đa 1 tiếng (từ ${minTimeStr})`), { statusCode: 400 });
+    }
+  }
+
+  attendance.checkIn = cIn;
   attendance.recordedBy = recordedBy;
   await attendance.save();
 
@@ -156,4 +213,4 @@ const getDailyReport = async ({ date, shiftId }) => {
   };
 };
 
-module.exports = { getAll, getById, checkIn, checkOut, manualUpdate, getDailyReport };
+module.exports = { getAll, getById, checkIn, checkOut, manualUpdate, getDailyReport, processAutoCheckOut };

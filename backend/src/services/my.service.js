@@ -169,11 +169,14 @@ const getMyEstimatedSalary = async (userId, { month, year }) => {
   return PayrollService.previewPayroll(userId, m, y);
 };
 
-const updateMyProfile = async (userId, { fullName, phone, avatar }) => {
+const updateMyProfile = async (userId, { fullName, phone, avatar, email, bankAccount, bankName }) => {
   const payload = {};
-  if (fullName) payload.fullName = fullName;
-  if (phone) payload.phone = phone;
-  if (avatar) payload.avatar = avatar;
+  if (fullName !== undefined) payload.fullName = fullName;
+  if (phone !== undefined) payload.phone = phone;
+  if (avatar !== undefined) payload.avatar = avatar;
+  if (email !== undefined) payload.email = email;
+  if (bankAccount !== undefined) payload.bankAccount = bankAccount;
+  if (bankName !== undefined) payload.bankName = bankName;
 
   const user = await User.findByIdAndUpdate(
     userId,

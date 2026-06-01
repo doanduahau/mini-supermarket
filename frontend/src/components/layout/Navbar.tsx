@@ -24,7 +24,7 @@ const ROUTE_NAMES: Record<string, string> = {
 // ─── Profile Modal ────────────────────────────────────────────────────────────
 function ProfileModal({ onClose, onUpdated }: { onClose: () => void; onUpdated: () => void }) {
   const [profile, setProfile] = useState<any>(null);
-  const [form, setForm] = useState({ fullName: '', phone: '' });
+  const [form, setForm] = useState({ fullName: '', phone: '', email: '', bankAccount: '', bankName: '' });
   const [fetching, setFetching] = useState(true);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -36,7 +36,13 @@ function ProfileModal({ onClose, onUpdated }: { onClose: () => void; onUpdated: 
       .then(({ data }) => {
         const p = data.data;
         setProfile(p);
-        setForm({ fullName: p.fullName || '', phone: p.phone || '' });
+        setForm({ 
+          fullName: p.fullName || '', 
+          phone: p.phone || '',
+          email: p.email || '',
+          bankAccount: p.bankAccount || '',
+          bankName: p.bankName || ''
+        });
       })
       .catch(() => setError('Không thể tải thông tin tài khoản.'))
       .finally(() => setFetching(false));
@@ -89,8 +95,8 @@ function ProfileModal({ onClose, onUpdated }: { onClose: () => void; onUpdated: 
               {/* Read-only fields */}
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="text-xs font-bold text-gray-500 uppercase tracking-wide flex items-center gap-1.5 mb-1.5"><Mail className="w-3.5 h-3.5" />Email</label>
-                  <div className="border border-gray-200 bg-gray-50 rounded-xl px-3 py-2.5 text-sm text-gray-600 truncate">{profile?.email}</div>
+                  <label className="text-xs font-bold text-gray-500 uppercase tracking-wide flex items-center gap-1.5 mb-1.5"><BadgeCheck className="w-3.5 h-3.5" />Vai trò</label>
+                  <div className="border border-gray-200 bg-gray-50 rounded-xl px-3 py-2.5 text-sm text-gray-600 truncate">{ROLE_LABELS[profile?.role] || profile?.role}</div>
                 </div>
                 <div>
                   <label className="text-xs font-bold text-gray-500 uppercase tracking-wide flex items-center gap-1.5 mb-1.5"><BadgeCheck className="w-3.5 h-3.5" />Ngày vào làm</label>
@@ -113,16 +119,38 @@ function ProfileModal({ onClose, onUpdated }: { onClose: () => void; onUpdated: 
                 {error && <div className="bg-red-50 border border-red-200 text-red-700 text-sm px-4 py-2.5 rounded-xl">{error}</div>}
                 {success && <div className="bg-green-50 border border-green-200 text-green-700 text-sm px-4 py-2.5 rounded-xl">{success}</div>}
 
-                <div>
-                  <label className="text-xs font-bold text-gray-500 uppercase tracking-wide flex items-center gap-1.5 mb-1.5"><UserIcon className="w-3.5 h-3.5" />Họ tên</label>
-                  <input value={form.fullName} onChange={e => setForm(f => ({ ...f, fullName: e.target.value }))}
-                    className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="text-xs font-bold text-gray-500 uppercase tracking-wide flex items-center gap-1.5 mb-1.5"><UserIcon className="w-3.5 h-3.5" />Họ tên</label>
+                    <input value={form.fullName} onChange={e => setForm(f => ({ ...f, fullName: e.target.value }))}
+                      className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                  </div>
+                  <div>
+                    <label className="text-xs font-bold text-gray-500 uppercase tracking-wide flex items-center gap-1.5 mb-1.5"><Mail className="w-3.5 h-3.5" />Email</label>
+                    <input type="email" value={form.email} onChange={e => setForm(f => ({ ...f, email: e.target.value }))}
+                      className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                  </div>
                 </div>
-                <div>
-                  <label className="text-xs font-bold text-gray-500 uppercase tracking-wide flex items-center gap-1.5 mb-1.5"><Phone className="w-3.5 h-3.5" />Số điện thoại</label>
-                  <input value={form.phone} onChange={e => setForm(f => ({ ...f, phone: e.target.value }))}
-                    placeholder="VD: 0901234567"
-                    className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="text-xs font-bold text-gray-500 uppercase tracking-wide flex items-center gap-1.5 mb-1.5"><Phone className="w-3.5 h-3.5" />Số điện thoại</label>
+                    <input value={form.phone} onChange={e => setForm(f => ({ ...f, phone: e.target.value }))}
+                      placeholder="VD: 0901234567"
+                      className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                  </div>
+                  <div className="col-span-2 sm:col-span-1">
+                    <label className="text-xs font-bold text-gray-500 uppercase tracking-wide flex items-center gap-1.5 mb-1.5">Ngân hàng</label>
+                    <input value={form.bankName} onChange={e => setForm(f => ({ ...f, bankName: e.target.value }))}
+                      placeholder="VD: Vietcombank"
+                      className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                  </div>
+                  <div className="col-span-2">
+                    <label className="text-xs font-bold text-gray-500 uppercase tracking-wide flex items-center gap-1.5 mb-1.5">Số tài khoản</label>
+                    <input value={form.bankAccount} onChange={e => setForm(f => ({ ...f, bankAccount: e.target.value }))}
+                      placeholder="VD: 1012345678"
+                      className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                  </div>
                 </div>
 
                 <div className="flex gap-3 pt-1">

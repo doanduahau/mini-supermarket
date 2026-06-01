@@ -5,11 +5,20 @@ const updateProfileValidator = [
     .optional()
     .isLength({ min: 2, max: 50 }).withMessage('Họ tên phải từ 2 đến 50 ký tự'),
   body('phone')
-    .optional()
+    .optional({ checkFalsy: true })
     .matches(/^(0[3|5|7|8|9])+([0-9]{8})$/).withMessage('Số điện thoại không hợp lệ'),
   body('avatar')
-    .optional()
+    .optional({ checkFalsy: true })
     .isURL().withMessage('Avatar phải là đường dẫn URL hợp lệ'),
+  body('email')
+    .optional({ checkFalsy: true })
+    .isEmail().withMessage('Email không hợp lệ'),
+  body('bankAccount')
+    .optional({ checkFalsy: true })
+    .isString().withMessage('Số tài khoản không hợp lệ'),
+  body('bankName')
+    .optional({ checkFalsy: true })
+    .isString().withMessage('Tên ngân hàng không hợp lệ'),
 ];
 
 const selfRegisterValidator = [

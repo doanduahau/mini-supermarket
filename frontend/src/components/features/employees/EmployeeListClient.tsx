@@ -1,4 +1,5 @@
 'use client';
+import toast from 'react-hot-toast';
 
 import React, { useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
@@ -41,7 +42,7 @@ export default function EmployeeListClient({ initialData, meta, searchParams }: 
       await axiosInstance.patch(`/users/${emp._id}/status`, { status: emp.status === 'active' ? 'locked' : 'active' });
       router.refresh();
     } catch (e) {
-      alert('Lỗi cập nhật trạng thái');
+      toast.error('Lỗi cập nhật trạng thái');
     }
   };
 

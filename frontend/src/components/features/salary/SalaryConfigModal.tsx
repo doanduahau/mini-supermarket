@@ -1,4 +1,5 @@
 'use client';
+import toast from 'react-hot-toast';
 
 import React, { useState, useEffect } from 'react';
 import axiosInstance from '@/lib/axios';
@@ -43,15 +44,15 @@ export default function SalaryConfigModal({ onClose }: { onClose: () => void }) 
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!form.hourlyRate) return alert('Vui lòng nhập đơn giá');
+    if (!form.hourlyRate) return toast.error('Vui lòng nhập đơn giá');
     setUpdating(true);
     try {
       await axiosInstance.post('/salary-config', { ...form, hourlyRate: Number(form.hourlyRate) });
-      alert('Cập nhật thành công!');
+      toast.success('Cập nhật thành công!');
       fetchData();
       setForm({ ...form, hourlyRate: '' }); // reset input
     } catch (err: any) {
-      alert(err?.response?.data?.message || 'Có lỗi xảy ra.');
+      toast.error(err?.response?.data?.message || 'Có lỗi xảy ra.');
     } finally {
       setUpdating(false);
     }

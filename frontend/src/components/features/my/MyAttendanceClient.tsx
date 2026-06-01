@@ -1,4 +1,5 @@
 'use client';
+import toast from 'react-hot-toast';
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { Clock, CheckCircle2, XCircle, ChevronLeft, ChevronRight, Calendar } from 'lucide-react';
@@ -39,14 +40,14 @@ export default function MyAttendanceClient() {
     try {
       await axiosInstance.patch(`/my/attendance/${id}/checkin`);
       fetchData();
-    } catch (err: any) { alert(err?.response?.data?.message || 'Chấm công thất bại'); }
+    } catch (err: any) { toast.error(err?.response?.data?.message || 'Chấm công thất bại'); }
   };
 
   const handleCheckOut = async (id: string) => {
     try {
       await axiosInstance.patch(`/my/attendance/${id}/checkout`);
       fetchData();
-    } catch (err: any) { alert(err?.response?.data?.message || 'Chấm công thất bại'); }
+    } catch (err: any) { toast.error(err?.response?.data?.message || 'Chấm công thất bại'); }
   };
 
   const isToday = (d: string) => new Date(d).toDateString() === new Date().toDateString();

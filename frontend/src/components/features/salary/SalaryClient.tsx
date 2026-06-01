@@ -1,4 +1,5 @@
 'use client';
+import toast from 'react-hot-toast';
 
 import React, { useState, useEffect, useCallback } from 'react';
 import PageHeader from '@/components/layout/PageHeader';
@@ -33,10 +34,10 @@ export default function SalaryClient() {
     setGenerating(true);
     try {
       await axiosInstance.post('/payroll/calculate-all', { month, year });
-      alert('Tạo bảng lương thành công!');
+      toast.success('Tạo bảng lương thành công!');
       fetchData();
     } catch (e: any) {
-      alert(e?.response?.data?.message || 'Có lỗi xảy ra');
+      toast.error(e?.response?.data?.message || 'Có lỗi xảy ra');
     } finally {
       setGenerating(false);
     }
@@ -48,7 +49,7 @@ export default function SalaryClient() {
       await axiosInstance.patch(`/payroll/${id}/confirm`);
       fetchData();
     } catch (e: any) {
-      alert(e?.response?.data?.message || 'Có lỗi xảy ra');
+      toast.error(e?.response?.data?.message || 'Có lỗi xảy ra');
     }
   };
 
@@ -63,7 +64,7 @@ export default function SalaryClient() {
       link.click();
       document.body.removeChild(link);
     } catch {
-      alert('Lỗi xuất PDF');
+      toast.error('Lỗi xuất PDF');
     }
   };
 

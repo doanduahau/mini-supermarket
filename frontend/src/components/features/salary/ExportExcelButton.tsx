@@ -1,4 +1,5 @@
 'use client';
+import toast from 'react-hot-toast';
 
 import React, { useState } from 'react';
 import { FileSpreadsheet, Loader2 } from 'lucide-react';
@@ -29,7 +30,7 @@ export default function ExportExcelButton({ month, year, disabled }: ExportExcel
       URL.revokeObjectURL(url);
     } catch (error) {
       console.error(error);
-      alert('Không thể xuất Excel. Vui lòng thử lại.');
+      toast.error('Không thể xuất Excel. Vui lòng thử lại.');
     } finally {
       setLoading(false);
     }

@@ -1,4 +1,5 @@
 'use client';
+import toast from 'react-hot-toast';
 
 import React, { useState, useCallback } from 'react';
 import PageHeader from '@/components/layout/PageHeader';
@@ -181,7 +182,7 @@ function ConfirmDeleteModal({
       onDeleted();
       onClose();
     } catch (err: any) {
-      alert(err?.response?.data?.message || 'Không thể xóa thông báo này!');
+      toast.error(err?.response?.data?.message || 'Không thể xóa thông báo này!');
     } finally {
       setLoading(false);
     }

@@ -1,4 +1,5 @@
 'use client';
+import toast from 'react-hot-toast';
 
 import React, { useState } from 'react';
 import { FileDown, Loader2 } from 'lucide-react';
@@ -30,10 +31,10 @@ export default function ExportPDFButton({ payrollId, employeeName, month, year }
       
       // Use standard alert if toast is not globally available in this scope
       // In a real app, use the useToast hook
-      // alert('Xuất PDF thành công');
+      // toast.success('Xuất PDF thành công');
     } catch (error) {
       console.error(error);
-      alert('Không thể xuất PDF. Vui lòng thử lại.');
+      toast.error('Không thể xuất PDF. Vui lòng thử lại.');
     } finally {
       setLoading(false);
     }

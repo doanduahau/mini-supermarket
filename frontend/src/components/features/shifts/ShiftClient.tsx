@@ -1,4 +1,5 @@
 'use client';
+import toast from 'react-hot-toast';
 
 import React, { useState, useCallback } from 'react';
 import PageHeader from '@/components/layout/PageHeader';
@@ -142,7 +143,7 @@ function ConfirmDeleteModal({
       onDeleted(shift._id);
       onClose();
     } catch (err: any) {
-      alert(err?.response?.data?.message || 'Không thể xóa ca này!');
+      toast.error(err?.response?.data?.message || 'Không thể xóa ca này!');
     } finally {
       setLoading(false);
     }
@@ -396,8 +397,8 @@ export default function ShiftClient({ initialShifts }: { initialShifts: Shift[] 
             <button onClick={async () => {
               try {
                 await axiosInstance.put('/settings', { shiftRegistrationDate: registerDate });
-                alert('Đã lưu ngày đăng ký ca làm việc!');
-              } catch(e: any) { alert(e?.response?.data?.message || 'Lỗi khi lưu cài đặt'); }
+                toast.success('Đã lưu ngày đăng ký ca làm việc!');
+              } catch(e: any) { toast.error(e?.response?.data?.message || 'Lỗi khi lưu cài đặt'); }
             }} className="bg-blue-600 text-white px-4 py-2 rounded-xl text-sm font-bold hover:bg-blue-700 transition-colors shadow-sm">
               Lưu ngày
             </button>
@@ -581,13 +582,13 @@ export default function ShiftClient({ initialShifts }: { initialShifts: Shift[] 
             try {
               await axiosInstance.patch(`/shift-assignments/${id}/status`, { status });
               fetchAssignments();
-            } catch (e: any) { alert(e?.response?.data?.message || 'Lỗi cập nhật'); }
+            } catch (e: any) { toast.error(e?.response?.data?.message || 'Lỗi cập nhật'); }
           }}
           onAssign={async (empId) => {
             try {
               await axiosInstance.post('/shift-assignments', { shiftId: selectedCell.shift._id, employeeId: empId, date: format(selectedCell.date, 'yyyy-MM-dd'), status: 'approved' });
               fetchAssignments();
-            } catch (e: any) { alert(e?.response?.data?.message || 'Lỗi xếp ca'); }
+            } catch (e: any) { toast.error(e?.response?.data?.message || 'Lỗi xếp ca'); }
           }}
         />
       )}

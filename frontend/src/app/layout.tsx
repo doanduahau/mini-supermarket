@@ -10,6 +10,8 @@ export const metadata: Metadata = {
   description: "Hệ thống quản lý nhân sự siêu thị",
 };
 
+import { Toaster } from 'react-hot-toast';
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -21,6 +23,7 @@ export default function RootLayout({
         <AuthProvider>
           {children}
         </AuthProvider>
+        <Toaster position="top-right" toastOptions={{ duration: 3000, style: { background: '#333', color: '#fff' } }} />
       </body>
     </html>
   );

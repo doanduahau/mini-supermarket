@@ -1,4 +1,5 @@
 'use client';
+import toast from 'react-hot-toast';
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { Banknote, ChevronLeft, ChevronRight, TrendingUp, Clock, Gift, AlertTriangle, FileDown } from 'lucide-react';
@@ -37,7 +38,7 @@ export default function MySalaryClient() {
       const a = document.createElement('a'); a.href = url;
       a.download = `phieu-luong-thang-${month}-${year}.pdf`; a.click();
       URL.revokeObjectURL(url);
-    } catch { alert('Không thể xuất PDF.'); } finally { setPdfLoading(false); }
+    } catch { toast.error('Không thể xuất PDF.'); } finally { setPdfLoading(false); }
   };
 
   const STATUS_MAP: Record<string, { label: string; color: string }> = {

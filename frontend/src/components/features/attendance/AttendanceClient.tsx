@@ -1,4 +1,5 @@
 'use client';
+import toast from 'react-hot-toast';
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { ClipboardCheck, Search, Calendar, Clock, CheckCircle2, XCircle, AlertCircle, ChevronLeft, ChevronRight, RefreshCw, Edit3, X, History } from 'lucide-react';
@@ -57,7 +58,7 @@ function EditModal({ record, onClose, onSave }: EditModalProps) {
       onSave();
       onClose();
     } catch (e) {
-      alert('Cập nhật thất bại!');
+      toast.error('Cập nhật thất bại!');
     } finally {
       setLoading(false);
     }
@@ -181,7 +182,7 @@ export default function AttendanceClient() {
       await axiosInstance.patch(`/attendance/${id}/checkin`, { checkInTime: new Date().toISOString() });
       fetchData();
     } catch (err: any) {
-      alert(err.response?.data?.message || 'Check-in thất bại!');
+      toast.error(err.response?.data?.message || 'Check-in thất bại!');
     }
   };
 
@@ -190,7 +191,7 @@ export default function AttendanceClient() {
       await axiosInstance.patch(`/attendance/${id}/checkout`, { checkOutTime: new Date().toISOString() });
       fetchData();
     } catch (err: any) {
-      alert(err.response?.data?.message || 'Check-out thất bại!');
+      toast.error(err.response?.data?.message || 'Check-out thất bại!');
     }
   };
 

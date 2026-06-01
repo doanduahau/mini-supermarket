@@ -230,11 +230,24 @@ export default function AnnouncementClient({ initialAnnouncements }: { initialAn
   const fetchAnnouncements = useCallback(async () => {
     try {
       const { data } = await axiosInstance.get('/announcements');
-      setAnnouncements(data.data || []);
+      const items = data.data || [];
+      setAnnouncements(items);
+      
+      if (items.length > 0) {
+        localStorage.setItem('lastViewedAnnouncement', items[0].createdAt);
+        window.dispatchEvent(new Event('announcementsRead'));
+      } else {
+        localStorage.setItem('lastViewedAnnouncement', new Date().toISOString());
+        window.dispatchEvent(new Event('announcementsRead'));
+      }
     } catch (e) {
       console.error(e);
     }
   }, []);
+
+  React.useEffect(() => {
+    fetchAnnouncements();
+  }, [fetchAnnouncements]);
 
   return (
     <div className="space-y-6">

@@ -29,10 +29,39 @@ Dự án được phát triển theo mô hình Client-Server hiện đại, sử
     *   Quản lý State và gọi API thông qua **Axios** và **Custom Hooks**.
 *   **Backend (Xử lý nghiệp vụ):**
     *   Được xây dựng trên môi trường **Node.js** với Framework **Express.js**.
-    *   Hỗ trợ tương tác thời gian thực (real-time) bằng thư viện **Socket.io** (để bắn thông báo chấm công, duyệt ca).
+    *   Hỗ trợ tương tác thời gian thực (real-time) bằng thư viện **Socket.io** (để bắn thông báo chấm công, duyệt ca, thông báo tin tức...).
 *   **Cơ sở dữ liệu (Database):** 
     *   Sử dụng **MongoDB** – một cơ sở dữ liệu NoSQL linh hoạt, phù hợp với việc lưu trữ cấu trúc dữ liệu đa dạng của lịch làm việc và bảng lương. Tương tác qua thư viện **Mongoose (ODM)**.
 *   **Bảo mật & Tiện ích:**
     *   Xác thực người dùng (Authentication) & Phân quyền (Authorization) bằng **JSON Web Token (JWT)**.
     *   Mã hóa mật khẩu bằng **Bcrypt**.
-    *   Xử lý xuất báo cáo lương ra định dạng PDF ngay trên trình duyệt.
+    *   Xử lý xuất báo cáo lương ra định dạng PDF ngay trên trình duyệt (Client-side generation).
+
+---
+
+### II. Cơ sở lý thuyết
+
+Để xây dựng hệ thống quản lý nhân sự hiệu quả và đáp ứng tốt các yêu cầu nghiệp vụ thực tế, dự án đã áp dụng các cơ sở lý thuyết về công nghệ phần mềm và kiến trúc hệ thống mạng như sau:
+
+#### 1) Lý thuyết về Mô hình Client - Server và kiến trúc RESTful API
+*   **Mô hình Client - Server:** Là mô hình mạng máy tính trong đó các máy tính được phân chia thành hai loại: máy khách (Client) và máy chủ (Server). Trong dự án Mini HR, giao diện người dùng (Next.js) đóng vai trò là Client tiếp nhận thao tác của người dùng (như bấm điểm danh, đăng ký ca), sau đó gửi yêu cầu xử lý đến Server (Node.js/Express.js). Server xử lý logic nghiệp vụ, tương tác với cơ sở dữ liệu và trả kết quả về cho Client. Mô hình này giúp tách biệt rõ ràng giữa giao diện hiển thị và logic xử lý dữ liệu, dễ dàng bảo trì và mở rộng.
+*   **Kiến trúc RESTful API (Representational State Transfer):** Là một bộ các nguyên tắc kiến trúc để thiết kế các dịch vụ Web. Hệ thống Mini HR tuân thủ chặt chẽ REST API bằng cách sử dụng các phương thức HTTP tiêu chuẩn (`GET`, `POST`, `PUT`, `DELETE`) để tương tác với các tài nguyên (như `users`, `shifts`, `attendances`, `payrolls`). Dữ liệu trao đổi giữa Client và Server được định dạng dưới dạng JSON (JavaScript Object Notation), giúp tốc độ truyền tải nhanh và dễ dàng phân tích cú pháp.
+
+#### 2) Lý thuyết về Kiến trúc Server-Side Rendering (SSR) và Single Page Application (SPA) với React/Next.js
+*   **React và Single Page Application (SPA):** React là thư viện JavaScript sử dụng Virtual DOM (DOM ảo) để tối ưu hóa việc kết xuất (render) giao diện. Ứng dụng SPA chỉ tải một trang HTML duy nhất ở lần truy cập đầu tiên, sau đó tự động cập nhật lại các phần giao diện khi người dùng chuyển trang hoặc có dữ liệu mới mà không cần tải lại toàn bộ trang (no-reload). Điều này mang lại trải nghiệm mượt mà như một ứng dụng điện thoại gốc (native app) cho nhân viên siêu thị.
+*   **Next.js (App Router):** Mở rộng từ React, Next.js cung cấp cơ chế kết xuất hỗn hợp bao gồm Server-Side Rendering (SSR) và Client-Side Rendering (CSR). Nhờ kiến trúc App Router mới nhất, hệ thống Mini HR có thể tối ưu hiệu năng trang web (load nội dung nhanh hơn ở các trang báo cáo, bảng tin) và đảm bảo an toàn dữ liệu, giấu kín các biến môi trường nhạy cảm khỏi phía Client.
+
+#### 3) Lý thuyết về Cơ sở dữ liệu NoSQL (MongoDB)
+Khác với cơ sở dữ liệu quan hệ truyền thống (SQL) lưu trữ dữ liệu dưới dạng các bảng cứng nhắc, **MongoDB** lưu trữ dữ liệu dưới dạng các tài liệu (Document) có cấu trúc BSON (tương tự JSON).
+*   **Lý do áp dụng trong dự án:** Nghiệp vụ quản lý ca làm việc và bảng lương có cấu trúc dữ liệu không đồng nhất và thay đổi thường xuyên (ví dụ: một phiếu tính lương có thể chứa nhiều loại phụ cấp, tiền phạt khác nhau tùy tháng). MongoDB cho phép lưu trữ cấu trúc động này một cách tự nhiên.
+*   **Mongoose ODM:** Hệ thống sử dụng Mongoose (Object Data Modeling) để định nghĩa các Schema, tạo ra các ràng buộc chặt chẽ (Validation) ở tầng ứng dụng (ví dụ: ràng buộc giờ kết thúc ca phải lớn hơn giờ bắt đầu ca) trước khi dữ liệu được ghi vào cơ sở dữ liệu, đảm bảo tính toàn vẹn dữ liệu.
+
+#### 4) Lý thuyết về Xác thực và Phân quyền (Authentication & Authorization) bằng JSON Web Token (JWT)
+Bảo mật thông tin nhân sự và tiền lương là yêu cầu tối quan trọng của hệ thống HR. 
+*   **Chuẩn JSON Web Token (JWT):** Là một chuỗi mã hóa bao gồm 3 phần (Header, Payload, Signature). Khi người dùng đăng nhập thành công, Server sẽ cấp phát một mã JWT. Khác với Session truyền thống lưu trạng thái trên Server, JWT mang tính chất "Stateless", toàn bộ thông tin định danh (ID nhân viên, Vai trò) được chứa gọn trong Payload của token.
+*   **Quá trình hoạt động:** Ở mỗi lần người dùng gửi yêu cầu (ví dụ: xin duyệt ca, xem bảng lương), token này sẽ được đính kèm vào HTTP Header (`Authorization: Bearer <token>`). Middleware của Express.js sẽ giải mã token để xác thực danh tính và kiểm tra vai trò (Role-based Access Control) xem người này là `employee` hay `shift_manager` có quyền thực hiện hành động đó hay không, từ đó chặn các truy cập trái phép.
+
+#### 5) Lý thuyết về Truyền thông Thời gian thực (Real-time Communication) với WebSockets
+Trong mô hình HTTP truyền thống, Client phải chủ động gửi yêu cầu thì Server mới trả lời (Polling), gây lãng phí tài nguyên mạng và có độ trễ.
+*   **Giao thức WebSocket:** Cung cấp kênh liên lạc hai chiều, liên tục và toàn thời gian giữa Client và Server qua một kết nối TCP duy nhất. 
+*   **Áp dụng Socket.io trong dự án:** Khi Quản lý bấm "Duyệt ca" hoặc tạo "Thông báo mới", sự kiện này được ghi vào database, đồng thời Server sẽ lập tức phát (emit) một tín hiệu (Event) thông qua Socket.io trực tiếp đến trình duyệt của các nhân viên có liên quan. Kết quả là biểu tượng hình "Cái chuông" trên màn hình điện thoại của nhân viên sẽ lập tức rung lên hiển thị chấm đỏ báo hiệu có thông báo mới mà không cần nhân viên phải tải lại trang (F5). Điều này giải quyết bài toán cần tính tức thời cao trong môi trường làm việc siêu thị.

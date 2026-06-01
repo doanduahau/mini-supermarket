@@ -83,7 +83,7 @@ export default function EmployeeFormModal({ isOpen, onClose, employee, onSuccess
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} title={isEdit ? 'Sửa hồ sơ nhân viên' : 'Thêm nhân viên mới'}>
-      <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+      <form onSubmit={handleSubmit(onSubmit)} className="space-y-4" autoComplete="off">
         {error && <div className="p-3 bg-red-50 text-red-600 rounded-lg text-sm border border-red-100 font-medium">{error}</div>}
         
         <div>
@@ -94,14 +94,14 @@ export default function EmployeeFormModal({ isOpen, onClose, employee, onSuccess
 
         <div>
           <label className="block text-sm font-semibold text-gray-700 mb-1.5">Email liên hệ <span className="text-red-500">*</span></label>
-          <input type="email" {...register('email')} className="w-full px-4 py-2.5 border border-gray-200 hover:border-gray-300 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors shadow-sm" />
+          <input type="email" {...register('email')} autoComplete="off" className="w-full px-4 py-2.5 border border-gray-200 hover:border-gray-300 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors shadow-sm" />
           {errors.email && <p className="text-red-500 text-xs mt-1.5 font-medium">{errors.email.message}</p>}
         </div>
 
         <div>
           <label className="block text-sm font-semibold text-gray-700 mb-1.5">Mật khẩu {isEdit ? '(Bỏ trống nếu không đổi)' : <span className="text-red-500">*</span>}</label>
           <div className="relative">
-            <input type={showPassword ? "text" : "password"} {...register('password')} className="w-full px-4 py-2.5 border border-gray-200 hover:border-gray-300 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors shadow-sm pr-10" />
+            <input type={showPassword ? "text" : "password"} {...register('password')} autoComplete="new-password" className="w-full px-4 py-2.5 border border-gray-200 hover:border-gray-300 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors shadow-sm pr-10" />
             <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 focus:outline-none">
               {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
             </button>

@@ -61,6 +61,8 @@ function AnnouncementFormModal({
       }
       onSaved();
       onClose();
+      // Trigger bell to check for new announcements instantly
+      window.dispatchEvent(new Event('announcementsUpdated'));
     } catch (err: any) {
       setError(err?.response?.data?.message || 'Có lỗi xảy ra, vui lòng thử lại.');
     } finally {
@@ -232,18 +234,20 @@ export default function AnnouncementClient({ initialAnnouncements }: { initialAn
       const { data } = await axiosInstance.get('/announcements');
       const items = data.data || [];
       setAnnouncements(items);
-      
-      if (items.length > 0) {
-        localStorage.setItem('lastViewedAnnouncement', items[0].createdAt);
-        window.dispatchEvent(new Event('announcementsRead'));
-      } else {
-        localStorage.setItem('lastViewedAnnouncement', new Date().toISOString());
-        window.dispatchEvent(new Event('announcementsRead'));
-      }
     } catch (e) {
       console.error(e);
     }
   }, []);
+
+  React.useEffect(() => {
+    if (initialAnnouncements.length > 0) {
+      localStorage.setItem('lastViewedAnnouncement', initialAnnouncements[0].createdAt);
+      window.dispatchEvent(new Event('announcementsRead'));
+    } else {
+      localStorage.setItem('lastViewedAnnouncement', new Date().toISOString());
+      window.dispatchEvent(new Event('announcementsRead'));
+    }
+  }, [initialAnnouncements]);
 
   React.useEffect(() => {
     fetchAnnouncements();

@@ -31,11 +31,14 @@ export default function NotificationBell({ userId }: { userId: string }) {
     checkAnnouncements();
     const interval = setInterval(checkAnnouncements, 60000); // Check every minute
     const handleRead = () => setNewAnnouncementCount(0);
+    
     window.addEventListener('announcementsRead', handleRead);
+    window.addEventListener('announcementsUpdated', checkAnnouncements);
     
     return () => {
       clearInterval(interval);
       window.removeEventListener('announcementsRead', handleRead);
+      window.removeEventListener('announcementsUpdated', checkAnnouncements);
     };
   }, []);
 

@@ -41,6 +41,16 @@ const userSchema = new mongoose.Schema(
       type: String,
       trim: true,
     },
+    bankAccount: {
+      type: String,
+      trim: true,
+      default: null,
+    },
+    bankName: {
+      type: String,
+      trim: true,
+      default: null,
+    },
     startDate: {
       type: Date,
       default: Date.now,

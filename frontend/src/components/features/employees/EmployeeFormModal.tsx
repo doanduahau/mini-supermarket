@@ -13,6 +13,8 @@ const schema = z.object({
   password: z.string().optional(),
   role: z.enum(['supermarket_owner', 'shift_manager', 'employee']),
   phone: z.string().optional(),
+  bankAccount: z.string().optional(),
+  bankName: z.string().optional(),
 });
 
 type FormData = z.infer<typeof schema>;
@@ -30,9 +32,25 @@ export default function EmployeeFormModal({ isOpen, onClose, employee, onSuccess
     if (isOpen) {
       setError('');
       if (isEdit) {
-        reset({ fullName: employee.fullName, email: employee.email, role: employee.role, phone: employee.phone || '', password: '' });
+        reset({ 
+          fullName: employee.fullName, 
+          email: employee.email, 
+          role: employee.role, 
+          phone: employee.phone || '', 
+          password: '',
+          bankAccount: employee.bankAccount || '',
+          bankName: employee.bankName || ''
+        });
       } else {
-        reset({ fullName: '', email: '', role: 'employee', phone: '', password: '' });
+        reset({ 
+          fullName: '', 
+          email: '', 
+          role: 'employee', 
+          phone: '', 
+          password: '',
+          bankAccount: '',
+          bankName: ''
+        });
       }
     }
   }, [isOpen, isEdit, employee, reset]);
@@ -97,6 +115,18 @@ export default function EmployeeFormModal({ isOpen, onClose, employee, onSuccess
           <div>
             <label className="block text-sm font-semibold text-gray-700 mb-1.5">Số điện thoại</label>
             <input {...register('phone')} className="w-full px-4 py-2.5 border border-gray-200 hover:border-gray-300 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors shadow-sm" placeholder="09xxxx..." />
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 border-t border-gray-100 pt-4 mt-2">
+          <div>
+            <label className="block text-sm font-semibold text-gray-700 mb-1.5">Ngân hàng</label>
+            <input {...register('bankName')} className="w-full px-4 py-2.5 border border-gray-200 hover:border-gray-300 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors shadow-sm" placeholder="VD: Vietcombank, Techcombank..." />
+          </div>
+
+          <div>
+            <label className="block text-sm font-semibold text-gray-700 mb-1.5">Số tài khoản</label>
+            <input {...register('bankAccount')} className="w-full px-4 py-2.5 border border-gray-200 hover:border-gray-300 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors shadow-sm" placeholder="VD: 1903..." />
           </div>
         </div>
 

@@ -2,7 +2,7 @@ import { cookies } from 'next/headers';
 import PageHeader from '@/components/layout/PageHeader';
 import { Badge } from '@/components/ui/Badge';
 import { formatDate } from '@/lib/utils';
-import { User, Phone, Mail, Calendar as CalendarIcon, ArrowLeft, Briefcase, FileText } from 'lucide-react';
+import { User, Phone, Mail, Calendar as CalendarIcon, ArrowLeft, Briefcase, FileText, CreditCard, Landmark } from 'lucide-react';
 import Link from 'next/link';
 
 import EmployeeDetailTabsClient from './EmployeeDetailTabsClient';
@@ -74,7 +74,7 @@ export default async function EmployeeDetailPage(props: { params: Promise<{ id: 
             </div>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 p-6 bg-gray-50/50 rounded-2xl border border-gray-100">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 p-6 bg-gray-50/50 rounded-2xl border border-gray-100">
             <div className="flex flex-col gap-1">
               <div className="flex items-center gap-2 text-gray-500 mb-1">
                 <Mail className="w-4 h-4" />
@@ -97,6 +97,22 @@ export default async function EmployeeDetailPage(props: { params: Promise<{ id: 
                 <span className="text-xs font-bold uppercase tracking-wider">Ngày gia nhập</span>
               </div>
               <p className="font-semibold text-gray-900">{formatDate(emp.createdAt)}</p>
+            </div>
+
+            <div className="flex flex-col gap-1">
+              <div className="flex items-center gap-2 text-gray-500 mb-1">
+                <Landmark className="w-4 h-4" />
+                <span className="text-xs font-bold uppercase tracking-wider">Ngân hàng</span>
+              </div>
+              <p className="font-semibold text-gray-900">{emp.bankName || 'Chưa cập nhật'}</p>
+            </div>
+
+            <div className="flex flex-col gap-1">
+              <div className="flex items-center gap-2 text-gray-500 mb-1">
+                <CreditCard className="w-4 h-4" />
+                <span className="text-xs font-bold uppercase tracking-wider">Số tài khoản</span>
+              </div>
+              <p className="font-semibold text-gray-900">{emp.bankAccount || 'Chưa cập nhật'}</p>
             </div>
             
             <div className="flex flex-col gap-1">

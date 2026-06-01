@@ -33,6 +33,12 @@ const createUserValidator = [
     .optional()
     .matches(/^(0[3|5|7|8|9])+([0-9]{8})$/)
     .withMessage('Số điện thoại không hợp lệ'),
+  body('bankAccount')
+    .optional()
+    .isString(),
+  body('bankName')
+    .optional()
+    .isString(),
 ];
 
 const updateUserValidator = [
@@ -48,6 +54,12 @@ const updateUserValidator = [
     .optional()
     .matches(/^(0[3|5|7|8|9])+([0-9]{8})$/)
     .withMessage('Số điện thoại không hợp lệ'),
+  body('bankAccount')
+    .optional()
+    .isString(),
+  body('bankName')
+    .optional()
+    .isString(),
   body('avatar')
     .optional()
     .isURL()

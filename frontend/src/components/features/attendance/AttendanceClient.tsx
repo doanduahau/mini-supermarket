@@ -180,14 +180,18 @@ export default function AttendanceClient() {
     try {
       await axiosInstance.patch(`/attendance/${id}/checkin`, { checkInTime: new Date().toISOString() });
       fetchData();
-    } catch { alert('Check-in thất bại!'); }
+    } catch (err: any) {
+      alert(err.response?.data?.message || 'Check-in thất bại!');
+    }
   };
 
   const handleCheckOut = async (id: string) => {
     try {
       await axiosInstance.patch(`/attendance/${id}/checkout`, { checkOutTime: new Date().toISOString() });
       fetchData();
-    } catch { alert('Check-out thất bại!'); }
+    } catch (err: any) {
+      alert(err.response?.data?.message || 'Check-out thất bại!');
+    }
   };
 
   const filtered = attendances.filter(a =>

@@ -126,7 +126,7 @@ const getMyAttendance = async (userId, { month, year, page = 1, limit = 20 }) =>
   const [attendance, total] = await Promise.all([
     Attendance.find(query)
       .populate('shift', 'name startTime endTime')
-      .sort({ date: -1 })
+      .sort({ date: 1, 'shift.startTime': 1 })
       .skip(skip)
       .limit(limit),
     Attendance.countDocuments(query)

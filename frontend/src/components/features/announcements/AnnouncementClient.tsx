@@ -240,14 +240,16 @@ export default function AnnouncementClient({ initialAnnouncements }: { initialAn
   }, []);
 
   React.useEffect(() => {
+    if (!user?._id) return;
+    
     if (initialAnnouncements.length > 0) {
-      localStorage.setItem('lastViewedAnnouncement', initialAnnouncements[0].createdAt);
+      localStorage.setItem(`lastViewedAnnouncement_${user._id}`, initialAnnouncements[0].createdAt);
       window.dispatchEvent(new Event('announcementsRead'));
     } else {
-      localStorage.setItem('lastViewedAnnouncement', new Date().toISOString());
+      localStorage.setItem(`lastViewedAnnouncement_${user._id}`, new Date().toISOString());
       window.dispatchEvent(new Event('announcementsRead'));
     }
-  }, [initialAnnouncements]);
+  }, [initialAnnouncements, user?._id]);
 
   React.useEffect(() => {
     fetchAnnouncements();

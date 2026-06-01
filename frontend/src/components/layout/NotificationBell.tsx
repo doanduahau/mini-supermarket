@@ -17,7 +17,7 @@ export default function NotificationBell({ userId }: { userId: string }) {
       try {
         const { data } = await axiosInstance.get('/announcements');
         const items = data.data || [];
-        const lastViewed = localStorage.getItem('lastViewedAnnouncement');
+        const lastViewed = localStorage.getItem(`lastViewedAnnouncement_${userId}`);
         if (!lastViewed) {
           setNewAnnouncementCount(items.length);
         } else {

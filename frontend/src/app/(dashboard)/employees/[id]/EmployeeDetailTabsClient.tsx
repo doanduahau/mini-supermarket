@@ -69,12 +69,19 @@ export default function EmployeeDetailTabsClient({ employeeId }: EmployeeDetailT
     }
   };
 
-  const getAttStatus = (status: string) => {
-    switch(status) {
-      case 'present': return <span className="text-green-600 bg-green-50 px-2 py-1 rounded text-xs font-bold flex items-center gap-1"><CheckCircle2 className="w-3 h-3"/> Đúng giờ</span>;
-      case 'late': return <span className="text-yellow-600 bg-yellow-50 px-2 py-1 rounded text-xs font-bold flex items-center gap-1"><AlertCircle className="w-3 h-3"/> Đi muộn</span>;
-      case 'absent': return <span className="text-red-600 bg-red-50 px-2 py-1 rounded text-xs font-bold flex items-center gap-1"><XCircle className="w-3 h-3"/> Vắng mặt</span>;
-      default: return <span className="text-gray-600 bg-gray-50 px-2 py-1 rounded text-xs font-bold flex items-center gap-1"><Clock className="w-3 h-3"/> Chưa vào</span>;
+  const getAttStatus = (item: any) => {
+    if (item.checkIn) {
+      return <span className="text-green-600 bg-green-50 px-2 py-1 rounded text-xs font-bold flex items-center gap-1"><CheckCircle2 className="w-3 h-3"/> Đã chấm công</span>;
+    }
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const itemDate = new Date(item.date);
+    itemDate.setHours(0, 0, 0, 0);
+    
+    if (itemDate > today) {
+      return <span className="text-gray-500 bg-gray-50 px-2 py-1 rounded text-xs font-bold">Sắp tới</span>;
+    } else {
+      return <span className="text-red-600 bg-red-50 px-2 py-1 rounded text-xs font-bold flex items-center gap-1"><XCircle className="w-3 h-3"/> Vắng mặt</span>;
     }
   };
 
@@ -187,7 +194,7 @@ export default function EmployeeDetailTabsClient({ employeeId }: EmployeeDetailT
                     <td className="px-4 py-3">{item.checkIn ? new Date(item.checkIn).toLocaleTimeString('vi-VN', {hour:'2-digit', minute:'2-digit'}) : '—'}</td>
                     <td className="px-4 py-3">{item.checkOut ? new Date(item.checkOut).toLocaleTimeString('vi-VN', {hour:'2-digit', minute:'2-digit'}) : '—'}</td>
                     <td className="px-4 py-3 font-medium">{item.actualHours ? `${item.actualHours}h` : '—'}</td>
-                    <td className="px-4 py-3 flex justify-end">{getAttStatus(item.status)}</td>
+                    <td className="px-4 py-3 flex justify-end">{getAttStatus(item)}</td>
                   </tr>
                 )) : (
                   <tr><td colSpan={6} className="text-center py-8 text-gray-500">Không có dữ liệu chấm công</td></tr>

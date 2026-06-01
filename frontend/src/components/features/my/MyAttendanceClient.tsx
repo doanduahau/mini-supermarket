@@ -169,6 +169,8 @@ export default function MyAttendanceClient() {
                       </button>
                     ) : r.checkIn ? (
                       <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-green-700 bg-green-50 px-2.5 py-1 rounded-full"><CheckCircle2 className="w-3.5 h-3.5" />Đã đến</span>
+                    ) : new Date(r.date).getTime() > new Date().setHours(0,0,0,0) ? (
+                      <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-gray-500 bg-gray-50 px-2.5 py-1 rounded-full border border-gray-200">Sắp tới</span>
                     ) : (
                       <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-red-700 bg-red-50 px-2.5 py-1 rounded-full"><XCircle className="w-3.5 h-3.5" />Vắng mặt</span>
                     )}

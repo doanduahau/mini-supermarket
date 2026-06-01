@@ -100,12 +100,19 @@ const getMyAttendance = async (userId, { month, year, page = 1, limit = 20 }) =>
   let presentDays = 0;
   let absentDays = 0;
 
+  const today = new Date();
+  today.setUTCHours(0, 0, 0, 0);
+
   allMonthlyAttendances.forEach(att => {
     if (att.checkIn) {
       presentDays++;
       if (att.actualHours) totalHours += att.actualHours;
     } else {
-      absentDays++;
+      const attDate = new Date(att.date);
+      attDate.setUTCHours(0, 0, 0, 0);
+      if (attDate.getTime() < today.getTime()) {
+        absentDays++;
+      }
     }
   });
 

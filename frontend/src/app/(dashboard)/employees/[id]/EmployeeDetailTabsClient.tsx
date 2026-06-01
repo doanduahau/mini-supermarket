@@ -1,10 +1,11 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { User, Briefcase, FileText, Loader2, Calendar as CalendarIcon, Clock, CheckCircle2, XCircle, AlertCircle } from 'lucide-react';
+import { User, Briefcase, FileText, Loader2, Calendar as CalendarIcon, Clock, CheckCircle2, XCircle, AlertCircle, LogOut } from 'lucide-react';
 import axiosInstance from '@/lib/axios';
 import { formatDate } from '@/lib/utils';
 import { Badge } from '@/components/ui/Badge';
+import { getAttendanceStatus } from '@/lib/attendance';
 
 interface EmployeeDetailTabsClientProps {
   employeeId: string;
@@ -70,19 +71,13 @@ export default function EmployeeDetailTabsClient({ employeeId }: EmployeeDetailT
   };
 
   const getAttStatus = (item: any) => {
-    if (item.checkIn) {
-      return <span className="text-green-600 bg-green-50 px-2 py-1 rounded text-xs font-bold flex items-center gap-1"><CheckCircle2 className="w-3 h-3"/> Đã chấm công</span>;
-    }
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const itemDate = new Date(item.date);
-    itemDate.setHours(0, 0, 0, 0);
-    
-    if (itemDate > today) {
-      return <span className="text-gray-500 bg-gray-50 px-2 py-1 rounded text-xs font-bold">Sắp tới</span>;
-    } else {
-      return <span className="text-red-600 bg-red-50 px-2 py-1 rounded text-xs font-bold flex items-center gap-1"><XCircle className="w-3 h-3"/> Vắng mặt</span>;
-    }
+    const status = getAttendanceStatus(item);
+    if (status === 'upcoming') return <span className="text-gray-500 bg-gray-50 px-2 py-1 rounded text-xs font-bold">Sắp tới</span>;
+    if (status === 'absent') return <span className="text-red-600 bg-red-50 px-2 py-1 rounded text-xs font-bold flex items-center gap-1"><XCircle className="w-3 h-3"/> Vắng mặt</span>;
+    if (status === 'late') return <span className="text-yellow-700 bg-yellow-50 px-2 py-1 rounded text-xs font-bold flex items-center gap-1"><AlertCircle className="w-3 h-3"/> Vào muộn</span>;
+    if (status === 'early_leave') return <span className="text-orange-700 bg-orange-50 px-2 py-1 rounded text-xs font-bold flex items-center gap-1"><LogOut className="w-3 h-3"/> Ra sớm</span>;
+    if (status === 'wrong_time') return <span className="text-red-700 bg-red-50 px-2 py-1 rounded text-xs font-bold flex items-center gap-1"><AlertCircle className="w-3 h-3"/> Sai giờ</span>;
+    return <span className="text-green-600 bg-green-50 px-2 py-1 rounded text-xs font-bold flex items-center gap-1"><CheckCircle2 className="w-3 h-3"/> Đúng giờ</span>;
   };
 
   return (

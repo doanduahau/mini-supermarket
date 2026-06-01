@@ -2,9 +2,10 @@
 import toast from 'react-hot-toast';
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { Clock, CheckCircle2, XCircle, ChevronLeft, ChevronRight, Calendar } from 'lucide-react';
+import { Clock, CheckCircle2, XCircle, ChevronLeft, ChevronRight, Calendar, AlertCircle, LogOut } from 'lucide-react';
 import axiosInstance from '@/lib/axios';
 import PageHeader from '@/components/layout/PageHeader';
+import { getAttendanceStatus } from '@/lib/attendance';
 
 interface AttRecord { _id: string; shift: { name: string; startTime: string; endTime: string }; date: string; checkIn: string | null; checkOut: string | null; actualHours: number; }
 interface Summary { totalDays: number; totalHours: number; presentDays: number; absentDays: number }
@@ -168,13 +169,15 @@ export default function MyAttendanceClient() {
                       <button onClick={() => handleCheckOut(r._id)} className="bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold px-3 py-1.5 rounded-lg transition-colors shadow-sm">
                         Ra ca
                       </button>
-                    ) : r.checkIn ? (
-                      <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-green-700 bg-green-50 px-2.5 py-1 rounded-full"><CheckCircle2 className="w-3.5 h-3.5" />Đã đến</span>
-                    ) : new Date(r.date).getTime() > new Date().setHours(0,0,0,0) ? (
-                      <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-gray-500 bg-gray-50 px-2.5 py-1 rounded-full border border-gray-200">Sắp tới</span>
-                    ) : (
-                      <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-red-700 bg-red-50 px-2.5 py-1 rounded-full"><XCircle className="w-3.5 h-3.5" />Vắng mặt</span>
-                    )}
+                    ) : (() => {
+                      const status = getAttendanceStatus(r);
+                      if (status === 'upcoming') return <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-gray-500 bg-gray-50 px-2.5 py-1 rounded-full border border-gray-200">Sắp tới</span>;
+                      if (status === 'absent') return <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-red-700 bg-red-50 px-2.5 py-1 rounded-full"><XCircle className="w-3.5 h-3.5" />Vắng mặt</span>;
+                      if (status === 'late') return <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-yellow-700 bg-yellow-50 px-2.5 py-1 rounded-full"><AlertCircle className="w-3.5 h-3.5" />Vào muộn</span>;
+                      if (status === 'early_leave') return <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-orange-700 bg-orange-50 px-2.5 py-1 rounded-full"><LogOut className="w-3.5 h-3.5" />Ra sớm</span>;
+                      if (status === 'wrong_time') return <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-red-700 bg-red-50 px-2.5 py-1 rounded-full"><AlertCircle className="w-3.5 h-3.5" />Sai giờ</span>;
+                      return <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-green-700 bg-green-50 px-2.5 py-1 rounded-full"><CheckCircle2 className="w-3.5 h-3.5" />Đúng giờ</span>;
+                    })()}
                   </td>
                 </tr>
               ))}

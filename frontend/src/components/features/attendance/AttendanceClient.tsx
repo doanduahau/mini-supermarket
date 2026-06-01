@@ -2,9 +2,10 @@
 import toast from 'react-hot-toast';
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { ClipboardCheck, Search, Calendar, Clock, CheckCircle2, XCircle, AlertCircle, ChevronLeft, ChevronRight, RefreshCw, Edit3, X, History } from 'lucide-react';
+import { ClipboardCheck, Search, Calendar, Clock, CheckCircle2, XCircle, AlertCircle, ChevronLeft, ChevronRight, RefreshCw, Edit3, X, History, LogOut } from 'lucide-react';
 import axiosInstance from '@/lib/axios';
 import PageHeader from '@/components/layout/PageHeader';
+import { getAttendanceStatus } from '@/lib/attendance';
 
 interface Attendance {
   _id: string;
@@ -20,10 +21,13 @@ interface Attendance {
 }
 
 const STATUS_MAP: Record<string, { label: string; color: string; icon: React.ReactNode }> = {
-  present:   { label: 'Đúng giờ',  color: 'bg-green-100 text-green-700', icon: <CheckCircle2 className="w-3.5 h-3.5" /> },
-  late:      { label: 'Đi muộn',   color: 'bg-yellow-100 text-yellow-700', icon: <AlertCircle className="w-3.5 h-3.5" /> },
-  absent:    { label: 'Vắng mặt',  color: 'bg-red-100 text-red-700', icon: <XCircle className="w-3.5 h-3.5" /> },
-  pending:   { label: 'Chưa vào',  color: 'bg-gray-100 text-gray-600', icon: <Clock className="w-3.5 h-3.5" /> },
+  present:     { label: 'Đúng giờ',  color: 'bg-green-100 text-green-700', icon: <CheckCircle2 className="w-3.5 h-3.5" /> },
+  late:        { label: 'Vào muộn',   color: 'bg-yellow-100 text-yellow-700', icon: <AlertCircle className="w-3.5 h-3.5" /> },
+  early_leave: { label: 'Ra sớm',     color: 'bg-orange-100 text-orange-700', icon: <LogOut className="w-3.5 h-3.5" /> },
+  wrong_time:  { label: 'Sai giờ',    color: 'bg-red-100 text-red-700', icon: <AlertCircle className="w-3.5 h-3.5" /> },
+  absent:      { label: 'Vắng mặt',  color: 'bg-red-100 text-red-700', icon: <XCircle className="w-3.5 h-3.5" /> },
+  pending:     { label: 'Chưa vào',  color: 'bg-gray-100 text-gray-600', icon: <Clock className="w-3.5 h-3.5" /> },
+  upcoming:    { label: 'Sắp tới',   color: 'bg-gray-50 border border-gray-200 text-gray-500', icon: <Clock className="w-3.5 h-3.5" /> }
 };
 
 function fmt(dt: string | null) {
@@ -271,7 +275,7 @@ export default function AttendanceClient() {
                   <p>Không có dữ liệu chấm công</p>
                 </td></tr>
               ) : filtered.map(a => {
-                const status = a.checkOut ? 'present' : a.checkIn ? 'late' : 'pending';
+                const status = getAttendanceStatus(a);
                 const st = STATUS_MAP[status] || STATUS_MAP['pending'];
                 return (
                   <tr key={a._id} className="hover:bg-gray-50/50 transition-colors group">

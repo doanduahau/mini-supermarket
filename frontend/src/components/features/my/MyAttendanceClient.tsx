@@ -124,7 +124,8 @@ export default function MyAttendanceClient() {
           <h2 className="font-extrabold text-gray-900">Tháng {month}/{year}</h2>
           <button onClick={nextMonth} className="p-2 hover:bg-gray-200 rounded-xl transition-colors"><ChevronRight className="w-4 h-4" /></button>
         </div>
-        <div className="overflow-x-auto">
+        {/* Desktop Table */}
+        <div className="hidden md:block overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
               <tr className="bg-gray-50 border-b border-gray-100">
@@ -183,6 +184,60 @@ export default function MyAttendanceClient() {
               ))}
             </tbody>
           </table>
+        </div>
+
+        {/* Mobile Cards */}
+        <div className="md:hidden divide-y divide-gray-100">
+          {loading ? Array.from({ length: 4 }).map((_, i) => (
+            <div key={i} className="p-4 space-y-3">
+              <div className="flex justify-between"><div className="h-4 w-24 bg-gray-100 rounded animate-pulse" /><div className="h-4 w-16 bg-gray-100 rounded animate-pulse" /></div>
+              <div className="h-8 bg-gray-100 rounded animate-pulse" />
+            </div>
+          )) : records.length === 0 ? (
+            <div className="p-12 text-center text-gray-400">
+              <Calendar className="w-10 h-10 mx-auto mb-2 text-gray-200" />
+              <p className="text-sm">Không có dữ liệu</p>
+            </div>
+          ) : records.map(r => (
+            <div key={r._id} className="p-4 bg-white hover:bg-gray-50 transition-colors">
+              <div className="flex justify-between items-start mb-3">
+                <div>
+                  <p className="font-bold text-gray-900 text-sm">{new Date(r.date).toLocaleDateString('vi-VN', { weekday: 'short', day: '2-digit', month: '2-digit' })}</p>
+                  <p className="text-xs text-blue-600 font-semibold mt-1 bg-blue-50 inline-block px-2 py-0.5 rounded-md">{r.shift?.name || '—'}</p>
+                </div>
+                <div>
+                  {isToday(r.date) && !r.checkIn ? (
+                    <button onClick={() => handleCheckIn(r._id)} className="bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold px-3 py-1.5 rounded-lg transition-colors shadow-sm w-full">Vào ca</button>
+                  ) : isToday(r.date) && r.checkIn && !r.checkOut ? (
+                    <button onClick={() => handleCheckOut(r._id)} className="bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold px-3 py-1.5 rounded-lg transition-colors shadow-sm w-full">Ra ca</button>
+                  ) : (() => {
+                    const status = getAttendanceStatus(r);
+                    if (status === 'upcoming') return <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-gray-500 bg-gray-50 px-2 py-1 rounded-full border border-gray-200">Sắp tới</span>;
+                    if (status === 'absent') return <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-red-700 bg-red-50 px-2 py-1 rounded-full"><XCircle className="w-3 h-3" />Vắng mặt</span>;
+                    if (status === 'late') return <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-yellow-700 bg-yellow-50 px-2 py-1 rounded-full"><AlertCircle className="w-3 h-3" />Vào muộn</span>;
+                    if (status === 'early_leave') return <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-orange-700 bg-orange-50 px-2 py-1 rounded-full"><LogOut className="w-3 h-3" />Ra sớm</span>;
+                    if (status === 'wrong_time') return <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-red-700 bg-red-50 px-2 py-1 rounded-full"><AlertCircle className="w-3 h-3" />Sai giờ</span>;
+                    return <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-green-700 bg-green-50 px-2 py-1 rounded-full"><CheckCircle2 className="w-3 h-3" />Đúng giờ</span>;
+                  })()}
+                </div>
+              </div>
+              
+              <div className="grid grid-cols-3 gap-2 text-xs">
+                <div className="bg-gray-50 p-2 rounded-lg">
+                  <span className="text-gray-500 block mb-0.5">Giờ vào</span>
+                  <span className="font-mono font-bold text-gray-900">{fmt(r.checkIn)}</span>
+                </div>
+                <div className="bg-gray-50 p-2 rounded-lg">
+                  <span className="text-gray-500 block mb-0.5">Giờ ra</span>
+                  <span className="font-mono font-bold text-gray-900">{fmt(r.checkOut)}</span>
+                </div>
+                <div className="bg-blue-50/50 border border-blue-100 p-2 rounded-lg text-center">
+                  <span className="text-blue-600 block mb-0.5 font-medium">Số giờ</span>
+                  <span className="font-bold text-blue-700">{r.actualHours > 0 ? `${r.actualHours.toFixed(1)}h` : '—'}</span>
+                </div>
+              </div>
+            </div>
+          ))}
         </div>
         {totalPages > 1 && (
           <div className="flex items-center justify-between px-4 py-3 border-t border-gray-100 bg-gray-50/50">

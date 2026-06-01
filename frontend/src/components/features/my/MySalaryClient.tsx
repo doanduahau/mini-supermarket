@@ -84,7 +84,7 @@ export default function MySalaryClient() {
               </span>
             </div>
             <p className="text-4xl font-extrabold tracking-tight">{fmtMoney(payroll.netSalary || 0)}</p>
-            <div className="grid grid-cols-3 gap-4 mt-6 pt-4 border-t border-blue-500/30">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-6 pt-4 border-t border-blue-500/30">
               <div>
                 <p className="text-blue-200 text-xs">Lương cơ bản</p>
                 <p className="font-bold text-lg">{fmtMoney(payroll.baseSalary || 0)}</p>

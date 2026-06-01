@@ -75,6 +75,7 @@ export default function Sidebar({ isOpen, setIsOpen }: { isOpen: boolean, setIsO
               <Link
                 key={item.href}
                 href={item.href}
+                onClick={() => setIsOpen(false)}
                 className={`flex items-center gap-3 px-3.5 py-2.5 rounded-xl transition-all duration-200 group relative ${
                   isActive 
                     ? 'bg-blue-50 text-blue-700 font-semibold shadow-sm' 

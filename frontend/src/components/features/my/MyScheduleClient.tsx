@@ -247,7 +247,7 @@ export default function MyScheduleClient() {
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         {[
           { label: 'Ngày có ca', value: totalDays, color: 'text-blue-600', bg: 'bg-blue-50' },
           { label: 'Ca đã duyệt', value: totalApproved, color: 'text-green-600', bg: 'bg-green-50' },

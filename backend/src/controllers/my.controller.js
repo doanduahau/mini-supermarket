@@ -135,7 +135,7 @@ const changePassword = async (req, res, next) => {
       throw Object.assign(new Error('Mật khẩu hiện tại không đúng'), { statusCode: 400 });
     }
 
-    user.password = await bcrypt.hash(newPassword, 10);
+    user.password = newPassword;
     await user.save();
     return successResponse(res, null, 'Đổi mật khẩu thành công');
   } catch (err) {

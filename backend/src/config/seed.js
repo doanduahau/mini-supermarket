@@ -6,35 +6,12 @@
 require('dotenv').config();
 const dns = require('dns');
 const mongoose = require('mongoose');
-const { User, Shift, ShiftAssignment, Attendance, SalaryConfig } = require('../models');
+const { User, Shift, SalaryConfig } = require('../models');
 
 // Force Google DNS — tránh VMware/ISP chặn DNS SRV lookup của MongoDB Atlas
 dns.setServers(['8.8.8.8', '8.8.4.4']);
 
-
 // ─── Helpers ──────────────────────────────────────────────────────────────────
-
-/** Trả về ngày cách hôm nay n ngày (00:00:00 giờ local) */
-const daysAgo = (n) => {
-  const d = new Date();
-  d.setDate(d.getDate() - n);
-  d.setHours(0, 0, 0, 0);
-  return d;
-};
-
-/**
- * Tạo Date từ một ngày cơ sở + chuỗi "HH:MM" + offset phút.
- * JS tự xử lý overflow/underflow phút (ví dụ: "23:00" - 3 phút → 22:57).
- */
-const makeDateTime = (baseDate, timeStr, offsetMinutes = 0) => {
-  const [hours, minutes] = timeStr.split(':').map(Number);
-  const d = new Date(baseDate);
-  d.setHours(hours, minutes + offsetMinutes, 0, 0);
-  return d;
-};
-
-/** Số nguyên ngẫu nhiên trong khoảng [min, max] */
-const randInt = (min, max) => Math.floor(Math.random() * (max - min + 1)) + min;
 
 const log = (msg) => console.log(msg);
 const sep = () => log('─'.repeat(52));
@@ -50,8 +27,7 @@ const seed = async () => {
 
   // ── Bước 1: Xóa sạch (theo thứ tự ngược để tránh lỗi ref) ────────────────
   log('🗑️  Xóa dữ liệu cũ...');
-  await Attendance.deleteMany({});
-  await ShiftAssignment.deleteMany({});
+
   await SalaryConfig.deleteMany({});
   await Shift.deleteMany({});
   await User.deleteMany({});
@@ -143,60 +119,6 @@ const seed = async () => {
   );
   log(`   ✅ ${createdSalary.length} cấu hình lương đã được tạo.\n`);
 
-  // ── Bước 5: ShiftAssignments + Attendance ─────────────────────────────────
-  // 3 NV × 5 ngày (hôm nay - 4 → hôm nay) = 15 bản ghi mỗi loại
-  // Pattern xen kẽ Ca sáng / Ca chiều theo từng NV
-  log('📅 Seeding shift assignments & attendance...');
-
-  const shiftPattern = [
-    [caSang, caChieu, caSang, caChieu, caSang],   // nv1
-    [caChieu, caSang, caChieu, caSang, caChieu],  // nv2
-    [caSang, caChieu, caSang, caChieu, caSang],   // nv3
-  ];
-
-  const assignmentDocs = [];
-  const attendanceDocs = [];
-
-  // dayOffset: 4 → 0 (từ xa nhất → hôm nay)
-  for (let dayOffset = 4; dayOffset >= 0; dayOffset--) {
-    const workDate = daysAgo(dayOffset);
-    const dayIndex = 4 - dayOffset; // 0–4
-
-    for (let empIdx = 0; empIdx < employees.length; empIdx++) {
-      const employee = employees[empIdx];
-      const shift = shiftPattern[empIdx][dayIndex];
-
-      assignmentDocs.push({
-        employee: employee._id,
-        shift: shift._id,
-        date: workDate,
-        status: 'approved',
-        assignedBy: manager1._id,
-        note: `Phân công tự động (seed)`,
-      });
-
-      // checkIn  = giờ bắt đầu + 0–10 phút trễ
-      // checkOut = giờ kết thúc - 0–5 phút sớm
-      const checkIn = makeDateTime(workDate, shift.startTime, randInt(0, 10));
-      const checkOut = makeDateTime(workDate, shift.endTime, -randInt(0, 5));
-
-      attendanceDocs.push({
-        employee: employee._id,
-        shift: shift._id,
-        date: workDate,
-        checkIn,
-        checkOut,
-        recordedBy: manager1._id,
-        note: `Chấm công tự động (seed)`,
-      });
-    }
-  }
-
-  await ShiftAssignment.insertMany(assignmentDocs);
-  log(`   ✅ ${assignmentDocs.length} shift assignments đã được tạo.`);
-
-  await Attendance.insertMany(attendanceDocs);
-  log(`   ✅ ${attendanceDocs.length} attendance records đã được tạo.\n`);
 
   // ── Tổng kết ──────────────────────────────────────────────────────────────
   sep();
@@ -205,13 +127,10 @@ const seed = async () => {
   log(`  👤 Users             : ${createdUsers.length}`);
   log(`  🕐 Shifts            : ${createdShifts.length}`);
   log(`  💰 Salary configs    : ${createdSalary.length}`);
-  log(`  📅 Shift assignments : ${assignmentDocs.length}`);
-  log(`  ✅ Attendance        : ${attendanceDocs.length}`);
+
   sep();
   log('\n📌 Kiểm tra dữ liệu:');
   log('  GET http://localhost:5000/api/users');
-  log('  GET http://localhost:5000/api/attendance');
-  log('  GET http://localhost:5000/api/shift-assignments\n');
 
   await mongoose.disconnect();
   log('🔌 Đã ngắt kết nối MongoDB.\n');

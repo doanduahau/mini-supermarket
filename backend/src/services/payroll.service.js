@@ -26,20 +26,38 @@ const calculateForEmployee = async (employeeId, month, year, isPreview = false) 
   }).populate('shift', 'name startTime endTime');
 
   let totalHours = 0;
-  const attendanceRecords = attendances.map(a => {
-    totalHours += a.actualHours;
-    return {
-      date: a.date,
-      shiftName: a.shift ? a.shift.name : 'Không xác định',
-      actualHours: a.actualHours,
-      checkIn: a.checkIn,
-      checkOut: a.checkOut
-    };
-  });
+  const attendanceRecords = [];
 
+  let baseSalary = 0;
+
+  for (const attendance of attendances) {
+
+    const attendanceDay = new Date(attendance.date);
+    attendanceDay.setUTCHours(23, 59, 59, 999);
+
+    const attendanceConfig = await SalaryConfig.findOne({
+      role: user.role,
+      effectiveFrom: { $lte: attendanceDay }
+    }).sort({ effectiveFrom: -1 });
+    if (!attendanceConfig) continue;
+    const salary = Math.round(
+      attendance.actualHours * attendanceConfig.hourlyRate
+    );
+    baseSalary += salary;
+    totalHours += attendance.actualHours;
+
+    attendanceRecords.push({
+      date: attendance.date,
+      shift: attendance.shift ? attendance.shift._id : null,
+      actualHours: attendance.actualHours,
+      hourlyRate: attendanceConfig.hourlyRate,
+      salary,
+      checkIn: attendance.checkIn,
+      checkOut: attendance.checkOut
+    });
+  }
   totalHours = Math.round(totalHours * 100) / 100;
-  const hourlyRate = config ? config.hourlyRate : 0;
-  const baseSalary = Math.round(totalHours * hourlyRate);
+  baseSalary = Math.round(baseSalary);
 
   const bonuses = await Bonus.find({ employee: employeeId, month, year });
 
@@ -58,13 +76,13 @@ const calculateForEmployee = async (employeeId, month, year, isPreview = false) 
   });
 
   const netSalary = Math.max(0, baseSalary + bonusTotal - penaltyTotal);
-
+  
   return {
     employee: user._id,
     month,
     year,
     totalHours,
-    hourlyRate: config.hourlyRate,
+    hourlyRate: config ? config.hourlyRate : 0,
     baseSalary,
     bonusTotal,
     penaltyTotal,

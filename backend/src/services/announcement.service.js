@@ -7,8 +7,20 @@ const getAll = async (filters = {}) => {
   }
   
   const announcements = await Announcement.find(query)
-    .populate('author', 'fullName role avatar')
-    .sort({ createdAt: -1 });
+    .populate('author', 'fullName role avatar');
+  const priorityMap = {
+    urgent: 3,
+    high: 2,
+    normal: 1
+  };
+
+  announcements.sort((a, b) => {
+    if (priorityMap[b.priority] !== priorityMap[a.priority]) {
+      return priorityMap[b.priority] - priorityMap[a.priority];
+    }
+
+    return new Date(b.createdAt) - new Date(a.createdAt);
+  });
 
   return announcements;
 };

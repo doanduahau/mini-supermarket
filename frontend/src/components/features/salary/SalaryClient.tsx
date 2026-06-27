@@ -126,7 +126,26 @@ export default function SalaryClient() {
               <tr key={p._id} className="hover:bg-gray-50/50 transition-colors">
                 <td className="px-6 py-4">
                   <p className="font-bold text-gray-900">{p.employee?.fullName}</p>
-                  <p className="text-xs text-gray-400">{p.totalHours} giờ x {formatCurrency(p.hourlyRate)}</p>
+
+                  <div className="group relative inline-block">
+                    <p className="text-xs text-gray-400 cursor-help">
+                      {p.totalHours} giờ • {p.breakdown?.attendanceRecords?.length || 0} ca
+                    </p>
+
+                    <div className="absolute left-0 top-full mt-2 hidden group-hover:block z-50">
+                      <div className="bg-gray-900 text-white text-xs rounded-lg shadow-lg p-3 min-w-[220px]">
+                        {p.breakdown?.attendanceRecords?.map((r: any, index: number) => (
+                          <div
+                            key={index}
+                            className="flex justify-between gap-3 py-1 border-b border-gray-700 last:border-0"
+                          >
+                            <span>{r.actualHours}h × {formatCurrency(r.hourlyRate)}</span>
+                            <span>{formatCurrency(r.salary)}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
                 </td>
                 <td className="px-6 py-4 font-semibold text-gray-600">{formatCurrency(p.baseSalary)}</td>
                 <td className="px-6 py-4 font-semibold text-green-600">+{formatCurrency(p.bonusTotal)}</td>

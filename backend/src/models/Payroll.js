@@ -59,11 +59,14 @@ const payrollSchema = new mongoose.Schema(
     breakdown: {
       attendanceRecords: [
         {
-          date: Date,
-          shift: { type: mongoose.Schema.Types.ObjectId, ref: 'Shift' },
-          actualHours: Number,
-          checkIn: Date,
-          checkOut: Date,
+           date: Date,
+    	   shift: { type: mongoose.Schema.Types.ObjectId, ref: 'Shift' },
+    	   shiftName: String,
+    	   actualHours: Number,
+   	   hourlyRate: Number,
+   	   salary: Number,
+   	   checkIn: Date,
+   	   checkOut: Date,
         },
       ],
       bonusRecords: [

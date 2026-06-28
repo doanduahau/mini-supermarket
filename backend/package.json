@@ -1,0 +1,44 @@
+{
+  "name": "mini-supermarket-backend",
+  "version": "1.0.0",
+  "description": "Backend API for Mini Supermarket HR Management System",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "nodemon server.js",
+    "seed": "node src/config/seed.js"
+  },
+  "keywords": [
+    "supermarket",
+    "hr",
+    "nodejs",
+    "express",
+    "sequelize",
+    "postgresql"
+  ],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "bcryptjs": "^2.4.3",
+    "cookie-parser": "^1.4.7",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "exceljs": "^4.4.0",
+    "express": "^4.19.2",
+    "express-validator": "^7.2.0",
+    "helmet": "^7.1.0",
+    "jsonwebtoken": "^9.0.3",
+    "morgan": "^1.10.0",
+    "pg": "^8.11.0",
+    "pg-hstore": "^2.3.4",
+    "sequelize": "^6.37.0",
+    "nodemailer": "^8.0.10",
+    "pdfkit": "^0.18.0",
+    "pdfkit-table": "^0.2.11",
+    "roboto-fontface": "^0.10.0",
+    "socket.io": "^4.8.3"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.3"
+  }
+}

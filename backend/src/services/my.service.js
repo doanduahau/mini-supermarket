@@ -1,3 +1,4 @@
+const { Op } = require('sequelize');
 const { User, ShiftAssignment, Attendance, Shift, SalaryConfig, Bonus, Payroll } = require('../models');
 const ShiftAssignmentService = require('./shiftAssignment.service');
 const PayrollService = require('./payroll.service');
@@ -10,18 +11,20 @@ const getMySchedule = async (userId, { month, year }) => {
   const startDate = new Date(Date.UTC(y, m - 1, 1));
   const endDate = new Date(Date.UTC(y, m, 0, 23, 59, 59, 999));
 
-  const assignments = await ShiftAssignment.find({
-    employee: userId,
-    date: { $gte: startDate, $lte: endDate }
-  })
-    .populate('shift', 'name startTime endTime maxEmployees')
-    .sort({ date: 1 });
+  const assignments = await ShiftAssignment.findAll({
+    where: {
+      employeeId: parseInt(userId),
+      date: { [Op.between]: [startDate, endDate] }
+    },
+    include: [{ model: Shift, as: 'shift', attributes: ['name', 'startTime', 'endTime', 'maxEmployees'] }],
+    order: [['date', 'ASC']]
+  });
 
   const grouped = {};
   assignments.forEach(a => {
-    const dStr = a.date.toISOString().split('T')[0];
+    const dStr = typeof a.date === 'string' ? a.date : a.date.toISOString().split('T')[0];
     if (!grouped[dStr]) grouped[dStr] = [];
-    grouped[dStr].push(a);
+    grouped[dStr].push(a.toJSON());
   });
 
   const result = Object.keys(grouped).map(d => ({
@@ -34,16 +37,18 @@ const getMySchedule = async (userId, { month, year }) => {
 };
 
 const getShiftAvailability = async (startDate, endDate, userId) => {
-  const shifts = await Shift.find({}).sort({ startTime: 1 });
+  const shifts = await Shift.findAll({ order: [['startTime', 'ASC']] });
   
   const start = new Date(startDate);
   start.setUTCHours(0, 0, 0, 0);
   const end = new Date(endDate);
   end.setUTCHours(23, 59, 59, 999);
 
-  const assignments = await ShiftAssignment.find({
-    date: { $gte: start, $lte: end },
-    status: { $in: ['pending', 'approved'] }
+  const assignments = await ShiftAssignment.findAll({
+    where: {
+      date: { [Op.between]: [start, end] },
+      status: { [Op.in]: ['pending', 'approved'] }
+    }
   });
 
   const dates = [];
@@ -54,15 +59,16 @@ const getShiftAvailability = async (startDate, endDate, userId) => {
     const dayData = {
       date: dStr,
       shifts: shifts.map(s => {
-        const registeredAssignments = assignments.filter(a => 
-          a.date.toISOString().split('T')[0] === dStr && 
-          a.shift.toString() === s._id.toString()
-        );
+        const registeredAssignments = assignments.filter(a => {
+          const aDateStr = typeof a.date === 'string' ? a.date : a.date.toISOString().split('T')[0];
+          return aDateStr === dStr && a.shiftId === s.id;
+        });
         
-        const isRegisteredByMe = registeredAssignments.some(a => a.employee.toString() === userId.toString());
+        const isRegisteredByMe = registeredAssignments.some(a => a.employeeId === parseInt(userId));
         
         return {
-          _id: s._id,
+          _id: s.id,
+          id: s.id,
           name: s.name,
           startTime: s.startTime,
           endTime: s.endTime,
@@ -87,14 +93,14 @@ const getMyAttendance = async (userId, { month, year, page = 1, limit = 20 }) =>
   const startDate = new Date(Date.UTC(y, m - 1, 1));
   const endDate = new Date(Date.UTC(y, m, 0, 23, 59, 59, 999));
 
-  const query = {
-    employee: userId,
-    date: { $gte: startDate, $lte: endDate }
+  const whereClause = {
+    employeeId: parseInt(userId),
+    date: { [Op.between]: [startDate, endDate] }
   };
 
   const skip = (page - 1) * limit;
 
-  const allMonthlyAttendances = await Attendance.find(query);
+  const allMonthlyAttendances = await Attendance.findAll({ where: whereClause });
   
   let totalHours = 0;
   let presentDays = 0;
@@ -106,7 +112,7 @@ const getMyAttendance = async (userId, { month, year, page = 1, limit = 20 }) =>
   allMonthlyAttendances.forEach(att => {
     if (att.checkIn) {
       presentDays++;
-      if (att.actualHours) totalHours += att.actualHours;
+      if (att.actualHours) totalHours += Number(att.actualHours);
     } else {
       const attDate = new Date(att.date);
       attDate.setUTCHours(0, 0, 0, 0);
@@ -123,36 +129,36 @@ const getMyAttendance = async (userId, { month, year, page = 1, limit = 20 }) =>
     absentDays
   };
 
-  const [attendance, total] = await Promise.all([
-    Attendance.find(query)
-      .populate('shift', 'name startTime endTime')
-      .sort({ date: 1, 'shift.startTime': 1 })
-      .skip(skip)
-      .limit(limit),
-    Attendance.countDocuments(query)
-  ]);
+  const { rows: attendance, count: total } = await Attendance.findAndCountAll({
+    where: whereClause,
+    include: [{ model: Shift, as: 'shift', attributes: ['name', 'startTime', 'endTime'] }],
+    order: [['date', 'ASC'], [{ model: Shift, as: 'shift' }, 'startTime', 'ASC']],
+    offset: skip,
+    limit: limit
+  });
 
+  // Call AutoCheckOut for these attendances
   await AttendanceService.processAutoCheckOut(attendance);
 
   return {
-    attendance,
+    attendance: attendance.map(a => a.toJSON()),
     summary,
     pagination: { total, page, limit, totalPages: Math.ceil(total / limit) }
   };
 };
 
 const selfCheckIn = async (attendanceId, userId) => {
-  const attendance = await Attendance.findById(attendanceId);
+  const attendance = await Attendance.findByPk(attendanceId);
   if (!attendance) throw Object.assign(new Error('Không tìm thấy ca trực'), { statusCode: 404 });
-  if (attendance.employee.toString() !== userId.toString()) throw Object.assign(new Error('Không có quyền chấm công ca này'), { statusCode: 403 });
+  if (attendance.employeeId !== parseInt(userId)) throw Object.assign(new Error('Không có quyền chấm công ca này'), { statusCode: 403 });
   
   return AttendanceService.checkIn(attendanceId, new Date(), userId);
 };
 
 const selfCheckOut = async (attendanceId, userId) => {
-  const attendance = await Attendance.findById(attendanceId);
+  const attendance = await Attendance.findByPk(attendanceId);
   if (!attendance) throw Object.assign(new Error('Không tìm thấy ca trực'), { statusCode: 404 });
-  if (attendance.employee.toString() !== userId.toString()) throw Object.assign(new Error('Không có quyền chấm công ca này'), { statusCode: 403 });
+  if (attendance.employeeId !== parseInt(userId)) throw Object.assign(new Error('Không có quyền chấm công ca này'), { statusCode: 403 });
 
   return AttendanceService.checkOut(attendanceId, new Date(), userId);
 };
@@ -161,9 +167,10 @@ const getMyEstimatedSalary = async (userId, { month, year }) => {
   const m = month ? parseInt(month) : new Date().getMonth() + 1;
   const y = year ? parseInt(year) : new Date().getFullYear();
 
-  const existingPayroll = await Payroll.findOne({ employee: userId, month: m, year: y });
+  const existingPayroll = await Payroll.findOne({ where: { employeeId: parseInt(userId), month: m, year: y } });
   if (existingPayroll) {
-    return existingPayroll;
+    // Dùng getPayrollById để lấy đầy đủ breakdown (attendanceRecords + bonusRecords)
+    return PayrollService.getPayrollById(existingPayroll.id);
   }
 
   return PayrollService.previewPayroll(userId, m, y);
@@ -178,14 +185,13 @@ const updateMyProfile = async (userId, { fullName, phone, avatar, email, bankAcc
   if (bankAccount !== undefined) payload.bankAccount = bankAccount;
   if (bankName !== undefined) payload.bankName = bankName;
 
-  const user = await User.findByIdAndUpdate(
-    userId,
-    { $set: payload },
-    { new: true, runValidators: true }
-  ).select('-password -refreshToken');
+  await User.update(payload, { where: { id: parseInt(userId) } });
+  const user = await User.findByPk(parseInt(userId), {
+    attributes: { exclude: ['password', 'refreshToken'] }
+  });
 
   if (!user) throw Object.assign(new Error('User not found'), { statusCode: 404 });
-  return user;
+  return user.toJSON();
 };
 
 const selfRegisterShift = async (userId, { shiftId, date }) => {
@@ -210,15 +216,15 @@ const selfRegisterBulk = async (userId, assignments) => {
 };
 
 const cancelMyShift = async (userId, assignmentId) => {
-  const assignment = await ShiftAssignment.findById(assignmentId);
+  const assignment = await ShiftAssignment.findByPk(assignmentId);
   if (!assignment) throw Object.assign(new Error('Không tìm thấy ca đăng ký'), { statusCode: 404 });
-  if (assignment.employee.toString() !== userId.toString()) {
+  if (assignment.employeeId !== parseInt(userId)) {
     throw Object.assign(new Error('Không có quyền hủy ca này'), { statusCode: 403 });
   }
   if (assignment.status !== 'pending') {
     throw Object.assign(new Error('Chỉ có thể hủy ca đang chờ duyệt'), { statusCode: 400 });
   }
-  await ShiftAssignment.findByIdAndDelete(assignmentId);
+  await ShiftAssignment.destroy({ where: { id: assignmentId } });
   return true;
 };
 

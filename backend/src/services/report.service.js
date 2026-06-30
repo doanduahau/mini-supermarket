@@ -1,3 +1,4 @@
+const { Op } = require('sequelize');
 const { Payroll, Attendance, User, Shift, ShiftAssignment } = require('../models');
 const PayrollService = require('./payroll.service');
 
@@ -5,23 +6,30 @@ const getSalarySummary = async (month, year) => {
   const m = parseInt(month);
   const y = parseInt(year);
 
-  let payrolls = await Payroll.find({ month: m, year: y }).populate('employee', 'role fullName');
+  let payrolls = await Payroll.findAll({
+    where: { month: m, year: y },
+    include: [{ model: User, as: 'employee', attributes: ['id', '_id', 'role', 'fullName'] }]
+  });
   
   if (payrolls.length === 0) {
-    const users = await User.find({ status: 'active' });
+    const users = await User.findAll({ where: { status: 'active' } });
     const calculated = await Promise.allSettled(
-      users.map(u => PayrollService.previewPayroll(u._id, m, y))
+      users.map(u => PayrollService.previewPayroll(u.id, m, y))
     );
-    payrolls = calculated
-      .filter(res => res.status === 'fulfilled')
-      .map(res => {
+    const tempPayrolls = [];
+    calculated.forEach((res) => {
+      if (res.status === 'fulfilled') {
         const value = res.value;
-        const u = users.find(user => user._id.toString() === value.employee.toString());
-        return {
+        const u = users.find(user => user.id === value.employeeId);
+        tempPayrolls.push({
           ...value,
           employee: { role: u.role, fullName: u.fullName }
-        };
-      });
+        });
+      }
+    });
+    payrolls = tempPayrolls;
+  } else {
+    payrolls = payrolls.map(p => p.toJSON());
   }
 
   let totalHours = 0;
@@ -31,26 +39,32 @@ const getSalarySummary = async (month, year) => {
   let totalNetSalary = 0;
   const roleGroups = {};
   
-  const sorted = [...payrolls].sort((a, b) => b.netSalary - a.netSalary);
+  const sorted = [...payrolls].sort((a, b) => Number(b.netSalary) - Number(a.netSalary));
   const topEarners = sorted.slice(0, 3).map(p => ({
     fullName: p.employee.fullName,
-    netSalary: p.netSalary
+    netSalary: Number(p.netSalary)
   }));
 
   payrolls.forEach(p => {
-    totalHours += p.totalHours;
-    totalBaseSalary += p.baseSalary;
-    totalBonus += p.bonusTotal;
-    totalPenalty += p.penaltyTotal;
-    totalNetSalary += p.netSalary;
+    const hours = Number(p.totalHours);
+    const base = Number(p.baseSalary);
+    const bonus = Number(p.bonusTotal);
+    const penalty = Number(p.penaltyTotal);
+    const net = Number(p.netSalary);
+
+    totalHours += hours;
+    totalBaseSalary += base;
+    totalBonus += bonus;
+    totalPenalty += penalty;
+    totalNetSalary += net;
     
     const role = p.employee.role;
     if (!roleGroups[role]) {
       roleGroups[role] = { role, count: 0, totalHours: 0, totalNetSalary: 0 };
     }
     roleGroups[role].count++;
-    roleGroups[role].totalHours += p.totalHours;
-    roleGroups[role].totalNetSalary += p.netSalary;
+    roleGroups[role].totalHours += hours;
+    roleGroups[role].totalNetSalary += net;
   });
 
   return {
@@ -74,76 +88,69 @@ const getAttendanceSummary = async (month, year) => {
   const startDate = new Date(Date.UTC(y, m - 1, 1));
   const endDate = new Date(Date.UTC(y, m, 0, 23, 59, 59, 999));
 
-  const agg = await Attendance.aggregate([
-    { $match: { date: { $gte: startDate, $lte: endDate } } },
-    {
-      $lookup: {
-        from: 'shifts',
-        localField: 'shift',
-        foreignField: '_id',
-        as: 'shiftInfo'
+  const attendances = await Attendance.findAll({
+    where: { date: { [Op.between]: [startDate, endDate] } },
+    include: [
+      { model: User, as: 'employee', attributes: ['id', '_id', 'fullName', 'role'] },
+      { model: Shift, as: 'shift', attributes: ['startTime'] }
+    ]
+  });
+
+  const empMap = {};
+  
+  attendances.forEach(att => {
+    const empId = att.employeeId;
+    // Bỏ qua nếu không tìm thấy thông tin nhân viên
+    if (!att.employee) return;
+    
+    if (!empMap[empId]) {
+      empMap[empId] = {
+        employee: att.employee.toJSON(),
+        totalDays: 0,
+        presentDays: 0,
+        totalHours: 0,
+        lateDays: 0
+      };
+    }
+    const empData = empMap[empId];
+    empData.totalDays++;
+    
+    if (att.checkIn) {
+      empData.presentDays++;
+      if (att.actualHours) {
+        empData.totalHours += Number(att.actualHours);
       }
-    },
-    { $unwind: '$shiftInfo' },
-    {
-      $group: {
-        _id: '$employee',
-        totalDays: { $sum: 1 },
-        presentDays: {
-          $sum: { $cond: [{ $ifNull: ['$checkIn', false] }, 1, 0] }
-        },
-        totalHours: { $sum: { $ifNull: ['$actualHours', 0] } },
-        docs: { $push: '$$ROOT' }
+      
+      const shiftStartStr = att.shift ? att.shift.startTime : null;
+      if (shiftStartStr) {
+        const [sh, sm] = shiftStartStr.split(':').map(Number);
+        const checkIn = new Date(att.checkIn);
+        const shiftStartMins = sh * 60 + sm;
+        const checkInMins = checkIn.getUTCHours() * 60 + checkIn.getUTCMinutes();
+        if (checkInMins > shiftStartMins + 15) {
+          empData.lateDays++;
+        }
       }
-    },
-    {
-      $lookup: {
-        from: 'users',
-        localField: '_id',
-        foreignField: '_id',
-        as: 'userInfo'
-      }
-    },
-    { $unwind: '$userInfo' }
-  ]);
+    }
+  });
 
   let totalWorkingDays = 0;
   let totalPresent = 0;
   let totalAbsentAll = 0;
 
-  const employees = agg.map(item => {
-    let lateDays = 0;
-    let absentDays = item.totalDays - item.presentDays;
-
-    item.docs.forEach(doc => {
-      if (doc.checkIn) {
-        const shiftStartStr = doc.shiftInfo.startTime;
-        if (shiftStartStr) {
-          const [sh, sm] = shiftStartStr.split(':').map(Number);
-          const checkIn = new Date(doc.checkIn);
-          const shiftStartMins = sh * 60 + sm;
-          const checkInMins = checkIn.getUTCHours() * 60 + checkIn.getUTCMinutes();
-          if (checkInMins > shiftStartMins + 15) {
-            lateDays++;
-          }
-        }
-      }
-    });
-
+  const employees = Object.values(empMap).map(item => {
+    const absentDays = item.totalDays - item.presentDays;
+    
     totalWorkingDays += item.totalDays;
     totalPresent += item.presentDays;
     totalAbsentAll += absentDays;
 
     return {
-      employee: {
-        _id: item.userInfo._id,
-        fullName: item.userInfo.fullName,
-        role: item.userInfo.role
-      },
+      employee: item.employee,
       totalDays: item.totalDays,
       presentDays: item.presentDays,
       absentDays,
-      lateDays,
+      lateDays: item.lateDays,
       totalHours: Math.round(item.totalHours * 100) / 100,
       avgHoursPerDay: item.presentDays > 0 ? Math.round((item.totalHours / item.presentDays) * 100) / 100 : 0
     };
@@ -162,7 +169,7 @@ const getAttendanceSummary = async (month, year) => {
 };
 
 const getHeadcountReport = async () => {
-  const users = await User.find({});
+  const users = await User.findAll({});
   
   let total = 0;
   let active = 0;
@@ -212,51 +219,61 @@ const getShiftUtilization = async (month, year) => {
   
   const daysInMonth = new Date(y, m, 0).getDate();
 
-  const shifts = await Shift.find({});
+  const shifts = await Shift.findAll({});
   const result = [];
 
   for (const shift of shifts) {
     const totalSlots = shift.maxEmployees * daysInMonth;
 
-    const assignedAgg = await ShiftAssignment.aggregate([
-      { 
-        $match: { 
-          shift: shift._id, 
-          date: { $gte: startDate, $lte: endDate }, 
-          status: 'approved' 
-        } 
-      },
-      {
-        $group: {
-          _id: '$date',
-          count: { $sum: 1 }
-        }
-      },
-      { $sort: { count: 1 } }
-    ]);
+    const assignments = await ShiftAssignment.findAll({
+      where: {
+        shiftId: shift.id,
+        date: { [Op.between]: [startDate, endDate] },
+        status: 'approved'
+      }
+    });
 
-    let totalAssigned = 0;
-    assignedAgg.forEach(a => totalAssigned += a.count);
+    const dateCountMap = {};
+    assignments.forEach(a => {
+      const dStr = typeof a.date === 'string' ? a.date : a.date.toISOString().split('T')[0];
+      dateCountMap[dStr] = (dateCountMap[dStr] || 0) + 1;
+    });
 
+    const assignedDates = Object.keys(dateCountMap).map(date => ({
+      date,
+      count: dateCountMap[date]
+    })).sort((a, b) => a.count - b.count);
+
+    let totalAssigned = assignments.length;
     const utilizationRate = totalSlots > 0 ? Math.round((totalAssigned / totalSlots) * 100) : 0;
 
     let leastStaffedDate = null;
-    if (assignedAgg.length > 0) {
-      if (assignedAgg.length < daysInMonth) {
+    if (assignedDates.length > 0) {
+      if (assignedDates.length < daysInMonth) {
          leastStaffedDate = "Có ngày trống 100%";
       } else {
-         leastStaffedDate = assignedAgg[0]._id.toISOString().split('T')[0] + ` (${assignedAgg[0].count} người)`;
+         leastStaffedDate = assignedDates[0].date + ` (${assignedDates[0].count} người)`;
       }
     } else {
       leastStaffedDate = "Tất cả các ngày đều trống";
     }
 
+    const shortStaffedDays = [];
+    for (let d = 1; d <= daysInMonth; d++) {
+      const dateStr = `${y}-${String(m).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+      const count = dateCountMap[dateStr] || 0;
+      if (count < shift.minEmployees) {
+        shortStaffedDays.push(`${dateStr} (Đang có ${count}/${shift.minEmployees} NV)`);
+      }
+    }
+
     result.push({
-      shift: { name: shift.name, startTime: shift.startTime, endTime: shift.endTime },
+      shift: { name: shift.name, startTime: shift.startTime, endTime: shift.endTime, minEmployees: shift.minEmployees, maxEmployees: shift.maxEmployees },
       utilizationRate,
       totalAssigned,
       totalSlots,
-      leastStaffedDate
+      leastStaffedDate,
+      shortStaffedDays
     });
   }
 

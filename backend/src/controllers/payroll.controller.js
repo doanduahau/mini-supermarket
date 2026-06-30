@@ -74,28 +74,40 @@ const confirmPayroll = async (req, res, next) => {
 
 const { generatePayrollPDF } = require('../utils/pdfGenerator');
 const { generatePayrollExcel } = require('../utils/excelGenerator');
-const Payroll = require('../models/Payroll');
+const { Payroll, User, PayrollAttendanceRecord, PayrollBonusRecord } = require('../models');
 
 const exportPDF = async (req, res, next) => {
   try {
     const { id } = req.params;
-    const payroll = await Payroll.findById(id).populate('employee', 'fullName email role phone status');
+    const payroll = await Payroll.findByPk(id, {
+      include: [
+        { model: User, as: 'employee', attributes: ['id', '_id', 'fullName', 'email', 'role', 'phone', 'status'] },
+        { model: PayrollAttendanceRecord, as: 'attendanceRecords' },
+        { model: PayrollBonusRecord, as: 'bonusRecords' }
+      ]
+    });
     
     if (!payroll) {
       throw Object.assign(new Error('Không tìm thấy bảng lương'), { statusCode: 404 });
     }
 
     // Check permission: employee can only see their own
-    if (req.user.role === 'employee' && payroll.employee._id.toString() !== req.user._id.toString()) {
+    if (req.user.role === 'employee' && payroll.employee.id !== req.user.id && payroll.employee._id !== req.user._id) {
       throw Object.assign(new Error('Bạn không có quyền xem phiếu lương này'), { statusCode: 403 });
     }
 
-    const pdfBuffer = await generatePayrollPDF(payroll, payroll.employee);
+    const payrollJson = payroll.toJSON();
+    payrollJson.breakdown = {
+      attendanceRecords: payrollJson.attendanceRecords || [],
+      bonusRecords: payrollJson.bonusRecords || []
+    };
 
-    const safeName = payroll.employee.fullName.replace(/\s+/g, '-').toLowerCase();
+    const pdfBuffer = await generatePayrollPDF(payrollJson, payrollJson.employee);
+
+    const safeName = payrollJson.employee.fullName.replace(/\s+/g, '-').toLowerCase();
     
     res.setHeader('Content-Type', 'application/pdf');
-    res.setHeader('Content-Disposition', `attachment; filename="phieu-luong-${safeName}-${payroll.month}-${payroll.year}.pdf"`);
+    res.setHeader('Content-Disposition', `attachment; filename="phieu-luong-${safeName}-${payrollJson.month}-${payrollJson.year}.pdf"`);
     res.send(pdfBuffer);
   } catch (err) {
     next(err);
@@ -109,10 +121,25 @@ const exportExcel = async (req, res, next) => {
       throw Object.assign(new Error('Vui lòng cung cấp month và year'), { statusCode: 400 });
     }
 
-    const payrolls = await Payroll.find({ month: Number(month), year: Number(year) })
-      .populate('employee', 'fullName email role status');
+    const payrolls = await Payroll.findAll({
+      where: { month: Number(month), year: Number(year) },
+      include: [
+        { model: User, as: 'employee', attributes: ['id', '_id', 'fullName', 'email', 'role', 'status'] },
+        { model: PayrollAttendanceRecord, as: 'attendanceRecords' },
+        { model: PayrollBonusRecord, as: 'bonusRecords' }
+      ]
+    });
 
-    const buffer = await generatePayrollExcel(payrolls, Number(month), Number(year));
+    const mappedPayrolls = payrolls.map(p => {
+      const json = p.toJSON();
+      json.breakdown = {
+        attendanceRecords: json.attendanceRecords || [],
+        bonusRecords: json.bonusRecords || []
+      };
+      return json;
+    });
+
+    const buffer = await generatePayrollExcel(mappedPayrolls, Number(month), Number(year));
 
     res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
     res.setHeader('Content-Disposition', `attachment; filename="bang-luong-${month}-${year}.xlsx"`);

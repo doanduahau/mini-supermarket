@@ -1,11 +1,22 @@
-const mongoose = require('mongoose');
+const { DataTypes } = require('sequelize');
+const { sequelize } = require('../config/db');
 
-const settingSchema = new mongoose.Schema(
+const Setting = sequelize.define(
+  'Setting',
   {
-    key: { type: String, required: true, unique: true },
-    value: { type: mongoose.Schema.Types.Mixed, required: true },
+    key: {
+      type: DataTypes.STRING,
+      primaryKey: true, // Sử dụng key làm khóa chính
+      allowNull: false,
+    },
+    value: {
+      type: DataTypes.JSONB, // Sử dụng JSONB tối ưu thay cho Mixed của Mongoose
+      allowNull: false,
+    },
   },
-  { timestamps: true }
+  {
+    timestamps: true,
+  }
 );
 
-module.exports = mongoose.model('Setting', settingSchema);
+module.exports = Setting;

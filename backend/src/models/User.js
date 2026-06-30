@@ -1,83 +1,127 @@
-const mongoose = require('mongoose');
+const { DataTypes } = require('sequelize');
 const bcrypt = require('bcryptjs');
+const { sequelize } = require('../config/db');
 
 const SALT_ROUNDS = 10;
 
-const userSchema = new mongoose.Schema(
+const User = sequelize.define(
+  'User',
   {
+    id: {
+      type: DataTypes.INTEGER,
+      autoIncrement: true,
+      primaryKey: true,
+    },
+    // Thuộc tính ảo (Virtual attribute) để tương thích ngược với Frontend (_id thay cho ObjectId)
+    _id: {
+      type: DataTypes.VIRTUAL,
+      get() {
+        return this.id;
+      },
+    },
     fullName: {
-      type: String,
-      required: [true, 'Full name is required'],
-      trim: true,
+      type: DataTypes.STRING,
+      allowNull: false,
+      validate: {
+        notEmpty: { msg: 'Full name is required' },
+      },
     },
     email: {
-      type: String,
-      required: [true, 'Email is required'],
+      type: DataTypes.STRING,
+      allowNull: false,
       unique: true,
-      lowercase: true,
-      trim: true,
+      validate: {
+        notEmpty: { msg: 'Email is required' },
+        isEmail: true,
+      },
     },
     password: {
-      type: String,
-      required: [true, 'Password is required'],
-      minlength: 6,
-      select: false, // never return password by default
+      type: DataTypes.STRING,
+      allowNull: false,
+      validate: {
+        len: [6, 255],
+      },
     },
     role: {
-      type: String,
-      enum: ['supermarket_owner', 'shift_manager', 'employee'],
-      default: 'employee',
+      type: DataTypes.ENUM('supermarket_owner', 'shift_manager', 'employee'),
+      defaultValue: 'employee',
     },
     status: {
-      type: String,
-      enum: ['active', 'locked'],
-      default: 'active',
+      type: DataTypes.ENUM('active', 'locked'),
+      defaultValue: 'active',
     },
     avatar: {
-      type: String,
-      default: null,
+      type: DataTypes.STRING,
+      defaultValue: null,
     },
     phone: {
-      type: String,
-      trim: true,
+      type: DataTypes.STRING,
     },
     bankAccount: {
-      type: String,
-      trim: true,
-      default: null,
+      type: DataTypes.STRING,
+      defaultValue: null,
     },
     bankName: {
-      type: String,
-      trim: true,
-      default: null,
+      type: DataTypes.STRING,
+      defaultValue: null,
+    },
+    hourlyRate: {
+      type: DataTypes.NUMERIC(10, 2),
+      defaultValue: null,
+      comment: 'Mức lương/giờ riêng của nhân viên (nếu null, dùng SalaryConfig theo role)',
     },
     startDate: {
-      type: Date,
-      default: Date.now,
+      type: DataTypes.DATE,
+      defaultValue: DataTypes.NOW,
     },
     refreshToken: {
-      type: String,
-      default: null,
-      select: false,
+      type: DataTypes.STRING,
+      defaultValue: null,
     },
     deletedAt: {
-      type: Date,
-      default: null,
+      type: DataTypes.DATE,
+      defaultValue: null,
     },
   },
-  { timestamps: true }
+  {
+    timestamps: true,
+    // Ẩn mật khẩu và refreshToken mặc định
+    defaultScope: {
+      attributes: { exclude: ['password', 'refreshToken'] },
+    },
+    // Scope dành cho Auth service
+    scopes: {
+      withPassword: {
+        attributes: { include: ['password', 'refreshToken'] },
+      },
+    },
+    hooks: {
+      // Hook mã hóa mật khẩu trước khi tạo (thay thế pre-save Mongoose)
+      beforeCreate: async (user) => {
+        if (user.password) {
+          user.password = await bcrypt.hash(user.password, SALT_ROUNDS);
+        }
+      },
+      // Hook mã hóa mật khẩu trước khi cập nhật (thay thế pre-save Mongoose)
+      beforeUpdate: async (user) => {
+        if (user.changed('password')) {
+          user.password = await bcrypt.hash(user.password, SALT_ROUNDS);
+        }
+      },
+    },
+  }
 );
 
-// ─── Pre-save Hook: Hash password if modified ─────────────────────────────────
-userSchema.pre('save', async function (next) {
-  if (!this.isModified('password')) return next();
-  this.password = await bcrypt.hash(this.password, SALT_ROUNDS);
-  next();
-});
+// Ghi đè toJSON để đảm bảo virtual _id luôn có mặt trong payload response
+User.prototype.toJSON = function () {
+  const values = Object.assign({}, this.get());
+  values._id = this.id;
+  return values;
+};
 
-// ─── Instance Method: Compare plain password with hashed ─────────────────────
-userSchema.methods.comparePassword = async function (candidatePassword) {
+// Instance method: Kiểm tra mật khẩu
+User.prototype.comparePassword = async function (candidatePassword) {
   return bcrypt.compare(candidatePassword, this.password);
 };
 
-module.exports = mongoose.model('User', userSchema);
+module.exports = User;

@@ -1,15 +1,17 @@
+const { Op } = require('sequelize');
 const { SalaryConfig } = require('../models');
 
 const getAll = async () => {
-  const configs = await SalaryConfig.find().sort({ effectiveFrom: -1 });
+  const configs = await SalaryConfig.findAll({ order: [['effectiveFrom', 'DESC']] });
 
   // Group by role
   const grouped = {};
   configs.forEach(c => {
-    if (!grouped[c.role]) {
-      grouped[c.role] = { current: null, history: [] };
+    const json = c.toJSON();
+    if (!grouped[json.role]) {
+      grouped[json.role] = { current: null, history: [] };
     }
-    grouped[c.role].history.push(c);
+    grouped[json.role].history.push(json);
   });
 
   // Find the latest effective config
@@ -24,13 +26,18 @@ const getAll = async () => {
 
 const getCurrentByRole = async (role) => {
   const now = new Date();
-  const config = await SalaryConfig.findOne({ role, effectiveFrom: { $lte: now } })
-    .sort({ effectiveFrom: -1 });
+  const config = await SalaryConfig.findOne({ 
+    where: { 
+      role, 
+      effectiveFrom: { [Op.lte]: now } 
+    },
+    order: [['effectiveFrom', 'DESC']]
+  });
   
   if (!config) {
     throw Object.assign(new Error(`Chưa có cấu hình lương cho role ${role}`), { statusCode: 404 });
   }
-  return config;
+  return config.toJSON();
 };
 
 const create = async ({ role, hourlyRate, effectiveFrom }, createdBy) => {
@@ -40,14 +47,18 @@ const create = async ({ role, hourlyRate, effectiveFrom }, createdBy) => {
     role,
     hourlyRate,
     effectiveFrom: effDate,
-    createdBy
+    createdById: createdBy
   });
 
-  return config;
+  return config.toJSON();
 };
 
 const getHistory = async (role) => {
-  return SalaryConfig.find({ role }).sort({ effectiveFrom: -1 });
+  const configs = await SalaryConfig.findAll({ 
+    where: { role }, 
+    order: [['effectiveFrom', 'DESC']] 
+  });
+  return configs.map(c => c.toJSON());
 };
 
 module.exports = { getAll, getCurrentByRole, create, getHistory };

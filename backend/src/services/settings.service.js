@@ -1,7 +1,8 @@
+const { Op } = require('sequelize');
 const { Setting } = require('../models');
 
 const getSettings = async () => {
-  const settings = await Setting.find();
+  const settings = await Setting.findAll();
   const result = {};
   settings.forEach(s => {
     result[s.key] = s.value;
@@ -12,18 +13,18 @@ const getSettings = async () => {
 const updateSettings = async (payload) => {
   const keys = Object.keys(payload);
   for (const key of keys) {
-    await Setting.findOneAndUpdate(
-      { key },
-      { value: payload[key] },
-      { upsert: true, new: true }
-    );
+    await Setting.upsert({ key, value: payload[key] });
   }
   return getSettings();
 };
 
 const getPublicSettings = async () => {
   const keysToExpose = ['shiftRegistrationDate'];
-  const settings = await Setting.find({ key: { $in: keysToExpose } });
+  const settings = await Setting.findAll({ 
+    where: { 
+      key: { [Op.in]: keysToExpose } 
+    } 
+  });
   const result = {};
   settings.forEach(s => {
     result[s.key] = s.value;

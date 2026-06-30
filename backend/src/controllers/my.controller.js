@@ -1,7 +1,8 @@
 const MyService = require('../services/my.service');
 const { successResponse } = require('../utils/response');
 const bcrypt = require('bcryptjs');
-const User = require('../models/User');
+const { User, ShiftAssignment, Shift } = require('../models');
+const { Op } = require('sequelize');
 
 const getProfile = async (req, res, next) => {
   try {
@@ -129,7 +130,7 @@ const changePassword = async (req, res, next) => {
       throw Object.assign(new Error('Mật khẩu mới phải có ít nhất 6 ký tự'), { statusCode: 400 });
     }
 
-    const user = await User.findById(req.user._id).select('+password');
+    const user = await User.scope('withPassword').findByPk(req.user.id || req.user._id);
     const isMatch = await bcrypt.compare(currentPassword, user.password);
     if (!isMatch) {
       throw Object.assign(new Error('Mật khẩu hiện tại không đúng'), { statusCode: 400 });
@@ -138,6 +139,39 @@ const changePassword = async (req, res, next) => {
     user.password = newPassword;
     await user.save();
     return successResponse(res, null, 'Đổi mật khẩu thành công');
+  } catch (err) {
+    next(err);
+  }
+};
+
+const getCoworkers = async (req, res, next) => {
+  try {
+    const users = await User.findAll({
+      where: { status: 'active', id: { [Op.ne]: req.user.id } },
+      attributes: ['id', '_id', 'fullName', 'email', 'role', 'avatar']
+    });
+    return successResponse(res, users, 'Danh sách đồng nghiệp');
+  } catch (err) {
+    next(err);
+  }
+};
+
+const getCoworkerShifts = async (req, res, next) => {
+  try {
+    const employeeId = req.params.id;
+    const today = new Date();
+    today.setUTCHours(0, 0, 0, 0);
+
+    const assignments = await ShiftAssignment.findAll({
+      where: {
+        employeeId,
+        status: 'approved',
+        date: { [Op.gte]: today }
+      },
+      include: [{ model: Shift, as: 'shift', attributes: ['id', '_id', 'name', 'startTime', 'endTime'] }],
+      order: [['date', 'ASC']]
+    });
+    return successResponse(res, assignments, 'Danh sách ca của đồng nghiệp');
   } catch (err) {
     next(err);
   }
@@ -155,5 +189,7 @@ module.exports = {
   getEstimatedSalary,
   selfRegister,
   selfRegisterBulk,
-  cancelSelfRegister
+  cancelSelfRegister,
+  getCoworkers,
+  getCoworkerShifts
 };

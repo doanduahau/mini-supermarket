@@ -1,3 +1,4 @@
+const { Op } = require('sequelize');
 const { User, ShiftAssignment } = require('../models');
 const { sendMail } = require('../utils/mailer');
 const templates = require('../utils/emailTemplates');
@@ -6,35 +7,33 @@ const templates = require('../utils/emailTemplates');
  * List users with optional search/role/status filter + pagination.
  */
 const getAll = async (filters = {}, page = 1, limit = 10) => {
-  const query = {};
+  const where = {};
   
   if (filters.search) {
-    query.$or = [
-      { fullName: { $regex: filters.search, $options: 'i' } },
-      { email: { $regex: filters.search, $options: 'i' } }
+    where[Op.or] = [
+      { fullName: { [Op.iLike]: `%${filters.search}%` } },
+      { email: { [Op.iLike]: `%${filters.search}%` } }
     ];
   }
-  if (filters.role)   query.role   = filters.role;
-  if (filters.status) query.status = filters.status;
+  if (filters.role)   where.role   = filters.role;
+  if (filters.status) where.status = filters.status;
 
-  const skip = (page - 1) * limit;
+  const offset = (page - 1) * limit;
 
-  const [users, total] = await Promise.all([
-    User.find(query)
-      .select('-password -refreshToken')
-      .sort({ createdAt: -1 })
-      .skip(skip)
-      .limit(limit),
-    User.countDocuments(query),
-  ]);
+  const { rows, count } = await User.findAndCountAll({
+    where,
+    order: [['createdAt', 'DESC']],
+    offset,
+    limit,
+  });
 
   return {
-    users,
+    users: rows.map(u => u.toJSON()),
     pagination: {
-      total,
+      total: count,
       page,
       limit,
-      totalPages: Math.ceil(total / limit),
+      totalPages: Math.ceil(count / limit),
     }
   };
 };
@@ -43,43 +42,46 @@ const getAll = async (filters = {}, page = 1, limit = 10) => {
  * Find a single user by _id.
  */
 const getById = async (id) => {
-  const user = await User.findById(id).select('-password -refreshToken');
+  const user = await User.findByPk(id);
   if (!user) throw Object.assign(new Error('Không tìm thấy nhân viên'), { statusCode: 404 });
-  return user;
+  return user.toJSON();
 };
 
 /**
  * Create a new user.
  */
 const create = async (data, createdBy) => {
-  const existing = await User.findOne({ email: data.email?.toLowerCase() });
+  const existing = await User.findOne({ where: { email: data.email?.toLowerCase() } });
   if (existing) throw Object.assign(new Error('Email đã được sử dụng'), { statusCode: 400 });
 
   const user = await User.create(data);
-  return User.findById(user._id).select('-password -refreshToken');
+  const fetchedUser = await User.findByPk(user.id);
+  return fetchedUser.toJSON();
 };
 
 /**
  * Update user fields.
  */
 const update = async (id, data) => {
-  delete data.password;
-  delete data.role;
   delete data.refreshToken;
 
   if (data.email) {
-    const existing = await User.findOne({ email: data.email.toLowerCase(), _id: { $ne: id } });
+    const existing = await User.findOne({ 
+      where: { 
+        email: data.email.toLowerCase(), 
+        id: { [Op.ne]: id } 
+      } 
+    });
     if (existing) throw Object.assign(new Error('Email đã được sử dụng'), { statusCode: 400 });
   }
 
-  const user = await User.findByIdAndUpdate(
-    id,
-    { $set: data },
-    { new: true, runValidators: true }
-  ).select('-password -refreshToken');
-  
+  const user = await User.findByPk(id, { scope: 'withPassword' });
   if (!user) throw Object.assign(new Error('Không tìm thấy nhân viên'), { statusCode: 404 });
-  return user;
+
+  await user.update(data);
+  
+  const updatedUser = await User.findByPk(id);
+  return updatedUser.toJSON();
 };
 
 /**
@@ -90,24 +92,26 @@ const remove = async (id, actorId) => {
     throw Object.assign(new Error('Không thể xóa tài khoản của chính mình'), { statusCode: 403 });
   }
 
-  const futureAssignments = await ShiftAssignment.countDocuments({
-    employee: id,
-    date: { $gte: new Date() },
-    status: 'approved'
+  const futureAssignments = await ShiftAssignment.count({
+    where: {
+      employeeId: id,
+      date: { [Op.gte]: new Date() },
+      status: 'approved'
+    }
   });
 
   if (futureAssignments > 0) {
     throw Object.assign(new Error('Không thể xóa nhân viên đang có ca làm việc'), { statusCode: 400 });
   }
 
-  const user = await User.findByIdAndUpdate(
-    id,
-    { status: 'locked', deletedAt: Date.now() },
-    { new: true }
-  ).select('-password -refreshToken');
+  await User.update(
+    { status: 'locked', deletedAt: new Date() },
+    { where: { id } }
+  );
 
+  const user = await User.findByPk(id);
   if (!user) throw Object.assign(new Error('Không tìm thấy nhân viên'), { statusCode: 404 });
-  return user;
+  return user.toJSON();
 };
 
 /**
@@ -118,7 +122,7 @@ const toggleStatus = async (id, actorId) => {
     throw Object.assign(new Error('Không thể khóa tài khoản của chính mình'), { statusCode: 403 });
   }
 
-  const user = await User.findById(id);
+  const user = await User.findByPk(id);
   if (!user) throw Object.assign(new Error('Không tìm thấy nhân viên'), { statusCode: 404 });
 
   user.status = user.status === 'active' ? 'locked' : 'active';
@@ -129,8 +133,9 @@ const toggleStatus = async (id, actorId) => {
     sendMail({ to: user.email, ...mailOptions });
   }
 
+  const updatedUser = await User.findByPk(id);
   return { 
-    user: await User.findById(user._id).select('-password -refreshToken'), 
+    user: updatedUser.toJSON(), 
     message: `Đã ${user.status === 'locked' ? 'khóa' : 'mở khóa'} tài khoản` 
   };
 };

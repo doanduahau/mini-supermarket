@@ -1,89 +1,194 @@
-const mongoose = require('mongoose');
+const { DataTypes } = require('sequelize');
+const { sequelize } = require('../config/db');
 
-const payrollSchema = new mongoose.Schema(
+// Model chính: Payroll
+const Payroll = sequelize.define(
+  'Payroll',
   {
-    employee: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: 'User',
-      required: true,
+    id: {
+      type: DataTypes.INTEGER,
+      autoIncrement: true,
+      primaryKey: true,
+    },
+    // Thuộc tính ảo _id cho Frontend
+    _id: {
+      type: DataTypes.VIRTUAL,
+      get() {
+        return this.id;
+      },
+    },
+    employeeId: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
     },
     month: {
-      type: Number,
-      required: true,
-      min: 1,
-      max: 12,
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      validate: {
+        min: 1,
+        max: 12,
+      },
     },
     year: {
-      type: Number,
-      required: true,
+      type: DataTypes.INTEGER,
+      allowNull: false,
     },
     totalHours: {
-      type: Number,
-      default: 0,
+      type: DataTypes.NUMERIC(8, 2),
+      defaultValue: 0,
     },
     hourlyRate: {
-      type: Number,
-      required: true,
+      type: DataTypes.NUMERIC(14, 2),
+      allowNull: false,
     },
     baseSalary: {
-      type: Number,
-      required: true,
+      type: DataTypes.NUMERIC(14, 2),
+      allowNull: false,
     },
     bonusTotal: {
-      type: Number,
-      default: 0,
+      type: DataTypes.NUMERIC(14, 2),
+      defaultValue: 0,
     },
     penaltyTotal: {
-      type: Number,
-      default: 0,
+      type: DataTypes.NUMERIC(14, 2),
+      defaultValue: 0,
     },
     netSalary: {
-      type: Number,
-      required: true,
+      type: DataTypes.NUMERIC(14, 2),
+      allowNull: false,
     },
     status: {
-      type: String,
-      enum: ['draft', 'confirmed'],
-      default: 'draft',
+      type: DataTypes.ENUM('draft', 'confirmed'),
+      defaultValue: 'draft',
     },
     note: {
-      type: String,
+      type: DataTypes.TEXT,
     },
-    confirmedBy: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: 'User',
+    confirmedById: {
+      type: DataTypes.INTEGER,
     },
     confirmedAt: {
-      type: Date,
-    },
-    breakdown: {
-      attendanceRecords: [
-        {
-           date: Date,
-    	   shift: { type: mongoose.Schema.Types.ObjectId, ref: 'Shift' },
-    	   shiftName: String,
-    	   actualHours: Number,
-   	   hourlyRate: Number,
-   	   salary: Number,
-   	   checkIn: Date,
-   	   checkOut: Date,
-        },
-      ],
-      bonusRecords: [
-        {
-          type: { type: String, enum: ['bonus', 'penalty'] },
-          amount: Number,
-          reason: String,
-          date: Date,
-        },
-      ],
+      type: DataTypes.DATE,
     },
   },
-  { timestamps: true }
+  {
+    timestamps: true,
+    indexes: [
+      {
+        unique: true,
+        fields: ['employeeId', 'month', 'year'],
+      },
+      {
+        fields: ['month', 'year'],
+      },
+    ],
+  }
 );
 
-// Ensure an employee only has one payroll per month/year
-payrollSchema.index({ employee: 1, month: 1, year: 1 }, { unique: true });
-payrollSchema.index({ month: 1, year: 1 });
+Payroll.prototype.toJSON = function () {
+  const values = Object.assign({}, this.get());
+  values._id = this.id;
+  return values;
+};
 
-module.exports = mongoose.model('Payroll', payrollSchema);
+// Model phụ 1: PayrollAttendanceRecord (thay thế cho mảng breakdown.attendanceRecords)
+const PayrollAttendanceRecord = sequelize.define(
+  'PayrollAttendanceRecord',
+  {
+    id: {
+      type: DataTypes.INTEGER,
+      autoIncrement: true,
+      primaryKey: true,
+    },
+    // Thuộc tính ảo _id cho Frontend
+    _id: {
+      type: DataTypes.VIRTUAL,
+      get() {
+        return this.id;
+      },
+    },
+    payrollId: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+    },
+    date: {
+      type: DataTypes.DATEONLY,
+    },
+    shiftId: {
+      type: DataTypes.INTEGER,
+    },
+    shiftName: {
+      type: DataTypes.STRING,
+    },
+    actualHours: {
+      type: DataTypes.NUMERIC(6, 2),
+    },
+    hourlyRate: {
+      type: DataTypes.NUMERIC(14, 2),
+    },
+    salary: {
+      type: DataTypes.NUMERIC(14, 2),
+    },
+    checkIn: {
+      type: DataTypes.DATE,
+    },
+    checkOut: {
+      type: DataTypes.DATE,
+    },
+  },
+  {
+    timestamps: false,
+  }
+);
+
+PayrollAttendanceRecord.prototype.toJSON = function () {
+  const values = Object.assign({}, this.get());
+  values._id = this.id;
+  return values;
+};
+
+// Model phụ 2: PayrollBonusRecord (thay thế cho mảng breakdown.bonusRecords)
+const PayrollBonusRecord = sequelize.define(
+  'PayrollBonusRecord',
+  {
+    id: {
+      type: DataTypes.INTEGER,
+      autoIncrement: true,
+      primaryKey: true,
+    },
+    // Thuộc tính ảo _id cho Frontend
+    _id: {
+      type: DataTypes.VIRTUAL,
+      get() {
+        return this.id;
+      },
+    },
+    payrollId: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+    },
+    type: {
+      type: DataTypes.STRING,
+    },
+    amount: {
+      type: DataTypes.NUMERIC(14, 2),
+    },
+    reason: {
+      type: DataTypes.TEXT,
+    },
+    date: {
+      type: DataTypes.DATE,
+    },
+  },
+  {
+    timestamps: false,
+  }
+);
+
+PayrollBonusRecord.prototype.toJSON = function () {
+  const values = Object.assign({}, this.get());
+  values._id = this.id;
+  return values;
+};
+
+module.exports = { Payroll, PayrollAttendanceRecord, PayrollBonusRecord };

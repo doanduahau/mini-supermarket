@@ -1,42 +1,65 @@
-const mongoose = require('mongoose');
+const { DataTypes } = require('sequelize');
+const { sequelize } = require('../config/db');
 
-const shiftAssignmentSchema = new mongoose.Schema(
+const ShiftAssignment = sequelize.define(
+  'ShiftAssignment',
   {
-    employee: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: 'User',
-      required: [true, 'Employee is required'],
+    id: {
+      type: DataTypes.INTEGER,
+      autoIncrement: true,
+      primaryKey: true,
     },
-    shift: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: 'Shift',
-      required: [true, 'Shift is required'],
+    // Thuộc tính ảo _id cho Frontend
+    _id: {
+      type: DataTypes.VIRTUAL,
+      get() {
+        return this.id;
+      },
     },
-    // The specific calendar date for this assignment (time part should be midnight UTC)
+    // Khóa ngoại liên kết tới bảng User (nhân viên)
+    employeeId: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+    },
+    // Khóa ngoại liên kết tới bảng Shift (ca làm việc)
+    shiftId: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+    },
+    // Ngày diễn ra ca làm việc
     date: {
-      type: Date,
-      required: [true, 'Assignment date is required'],
+      type: DataTypes.DATEONLY,
+      allowNull: false,
     },
     status: {
-      type: String,
-      enum: ['pending', 'approved', 'rejected'],
-      default: 'pending',
+      type: DataTypes.ENUM('pending', 'approved', 'rejected', 'cancelled_by_leave', 'swapped'),
+      defaultValue: 'pending',
     },
-    // Manager/owner who assigned; null = employee self-registered
-    assignedBy: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: 'User',
-      default: null,
+    // Khóa ngoại liên kết tới User (người phân công)
+    assignedById: {
+      type: DataTypes.INTEGER,
+      allowNull: true,
     },
     note: {
-      type: String,
-      trim: true,
+      type: DataTypes.TEXT,
     },
   },
-  { timestamps: true }
+  {
+    timestamps: true,
+    indexes: [
+      {
+        unique: true,
+        fields: ['employeeId', 'shiftId', 'date'],
+      },
+    ],
+  }
 );
 
-// ─── Compound Unique Index: one employee per shift per day ────────────────────
-shiftAssignmentSchema.index({ employee: 1, shift: 1, date: 1 }, { unique: true });
+// Ghi đè toJSON để đảm bảo virtual _id luôn có mặt
+ShiftAssignment.prototype.toJSON = function () {
+  const values = Object.assign({}, this.get());
+  values._id = this.id;
+  return values;
+};
 
-module.exports = mongoose.model('ShiftAssignment', shiftAssignmentSchema);
+module.exports = ShiftAssignment;

@@ -44,7 +44,7 @@ axiosInstance.interceptors.response.use(
         const newAccessToken = data.data.accessToken;
         // Save new token
         localStorage.setItem('accessToken', newAccessToken);
-        document.cookie = `accessToken=${newAccessToken}; path=/; max-age=86400`;
+        document.cookie = `accessToken=${newAccessToken}; path=/; max-age=900`;
         
         // Update header and retry original request
         originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;

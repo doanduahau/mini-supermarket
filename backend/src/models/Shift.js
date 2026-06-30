@@ -1,34 +1,85 @@
-const mongoose = require('mongoose');
+const { DataTypes } = require('sequelize');
+const { sequelize } = require('../config/db');
 
-const shiftSchema = new mongoose.Schema(
+const Shift = sequelize.define(
+  'Shift',
   {
-    name: {
-      type: String,
-      required: [true, 'Shift name is required'],
-      trim: true,
+    id: {
+      type: DataTypes.INTEGER,
+      autoIncrement: true,
+      primaryKey: true,
     },
-    // Format "HH:MM", e.g. "07:00"
+    // Thuộc tính ảo (Virtual attribute) để tương thích ngược với Frontend
+    _id: {
+      type: DataTypes.VIRTUAL,
+      get() {
+        return this.id;
+      },
+    },
+    name: {
+      type: DataTypes.STRING,
+      allowNull: false,
+      validate: {
+        notEmpty: { msg: 'Shift name is required' },
+      },
+    },
     startTime: {
-      type: String,
-      required: [true, 'Start time is required'],
-      match: [/^\d{2}:\d{2}$/, 'startTime must be in HH:MM format'],
+      type: DataTypes.STRING(5),
+      allowNull: false,
+      validate: {
+        // Kiểm tra định dạng HH:MM
+        is: {
+          args: [/^\d{2}:\d{2}$/],
+          msg: 'startTime must be in HH:MM format',
+        },
+      },
     },
     endTime: {
-      type: String,
-      required: [true, 'End time is required'],
-      match: [/^\d{2}:\d{2}$/, 'endTime must be in HH:MM format'],
+      type: DataTypes.STRING(5),
+      allowNull: false,
+      validate: {
+        // Kiểm tra định dạng HH:MM
+        is: {
+          args: [/^\d{2}:\d{2}$/],
+          msg: 'endTime must be in HH:MM format',
+        },
+      },
     },
     maxEmployees: {
-      type: Number,
-      required: [true, 'Max employees is required'],
-      min: [1, 'Must allow at least 1 employee'],
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      validate: {
+        min: {
+          args: [1],
+          msg: 'Must allow at least 1 employee',
+        },
+      },
+    },
+    minEmployees: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      defaultValue: 1,
+      validate: {
+        min: {
+          args: [0],
+          msg: 'Must allow at least 0 employee',
+        },
+      },
     },
     description: {
-      type: String,
-      trim: true,
+      type: DataTypes.STRING,
     },
   },
-  { timestamps: true }
+  {
+    timestamps: true,
+  }
 );
 
-module.exports = mongoose.model('Shift', shiftSchema);
+// Ghi đè toJSON để đảm bảo virtual _id luôn xuất hiện
+Shift.prototype.toJSON = function () {
+  const values = Object.assign({}, this.get());
+  values._id = this.id;
+  return values;
+};
+
+module.exports = Shift;

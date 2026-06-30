@@ -17,9 +17,10 @@ export function useNotifications(userId?: string) {
   const unreadCount = notifications.filter(n => !n.read).length;
 
   useEffect(() => {
-    if (!userId) return;
+    const token = localStorage.getItem('token');
+    if (!userId || !token) return;
     
-    connectSocket(userId);
+    connectSocket(token);
     const socket = getSocket();
 
     const addNotif = (type: Notification['type'], message: string, link?: string) => {

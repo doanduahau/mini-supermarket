@@ -1,33 +1,61 @@
-const mongoose = require('mongoose');
+const { DataTypes } = require('sequelize');
+const { sequelize } = require('../config/db');
 
-const salaryConfigSchema = new mongoose.Schema(
+const SalaryConfig = sequelize.define(
+  'SalaryConfig',
   {
+    id: {
+      type: DataTypes.INTEGER,
+      autoIncrement: true,
+      primaryKey: true,
+    },
+    // Thuộc tính ảo _id để tương thích ngược với Frontend
+    _id: {
+      type: DataTypes.VIRTUAL,
+      get() {
+        return this.id;
+      },
+    },
     role: {
-      type: String,
-      enum: ['supermarket_owner', 'shift_manager', 'employee'],
-      required: [true, 'Role is required'],
+      type: DataTypes.ENUM('supermarket_owner', 'shift_manager', 'employee'),
+      allowNull: false,
+      validate: {
+        notEmpty: { msg: 'Role is required' },
+      },
     },
     hourlyRate: {
-      type: Number,
-      required: [true, 'Hourly rate is required'],
-      min: [0, 'Hourly rate cannot be negative'],
+      type: DataTypes.NUMERIC(12, 2),
+      allowNull: false,
+      validate: {
+        min: { args: [0], msg: 'Hourly rate cannot be negative' },
+      },
     },
-    // The date from which this rate becomes active
     effectiveFrom: {
-      type: Date,
-      required: true,
-      default: Date.now,
+      type: DataTypes.DATE,
+      allowNull: false,
+      defaultValue: DataTypes.NOW,
     },
-    createdBy: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: 'User',
-      default: null,
+    // Khóa ngoại liên kết tới bảng User (người tạo)
+    createdById: {
+      type: DataTypes.INTEGER,
+      allowNull: true,
     },
   },
-  { timestamps: true }
+  {
+    timestamps: true,
+    indexes: [
+      {
+        fields: ['role', 'effectiveFrom'],
+      },
+    ],
+  }
 );
 
-// ─── Index: quickly look up latest config per role ────────────────────────────
-salaryConfigSchema.index({ role: 1, effectiveFrom: -1 });
+// Ghi đè toJSON để đảm bảo virtual _id luôn có mặt
+SalaryConfig.prototype.toJSON = function () {
+  const values = Object.assign({}, this.get());
+  values._id = this.id;
+  return values;
+};
 
-module.exports = mongoose.model('SalaryConfig', salaryConfigSchema);
+module.exports = SalaryConfig;

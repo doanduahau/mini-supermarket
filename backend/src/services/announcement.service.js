@@ -1,52 +1,58 @@
-const { Announcement } = require('../models');
+const { Announcement, User } = require('../models');
 
 const getAll = async (filters = {}) => {
-  const query = {};
+  const where = {};
   if (filters.isActive !== undefined) {
-    query.isActive = filters.isActive;
+    where.isActive = filters.isActive;
   }
   
-  const announcements = await Announcement.find(query)
-    .populate('author', 'fullName role avatar');
+  const announcements = await Announcement.findAll({
+    where,
+    include: [{ model: User, as: 'author', attributes: ['id', '_id', 'fullName', 'role', 'avatar'] }]
+  });
+
   const priorityMap = {
     urgent: 3,
     high: 2,
     normal: 1
   };
 
-  announcements.sort((a, b) => {
+  const results = announcements.map(a => a.toJSON());
+  results.sort((a, b) => {
     if (priorityMap[b.priority] !== priorityMap[a.priority]) {
       return priorityMap[b.priority] - priorityMap[a.priority];
     }
-
     return new Date(b.createdAt) - new Date(a.createdAt);
   });
 
-  return announcements;
+  return results;
 };
 
 const create = async (data, authorId) => {
   const announcement = await Announcement.create({
     ...data,
-    author: authorId,
+    authorId,
   });
-  return announcement;
+  const fetched = await Announcement.findByPk(announcement.id);
+  return fetched.toJSON();
 };
 
 const update = async (id, data) => {
-  const announcement = await Announcement.findByIdAndUpdate(id, data, { new: true, runValidators: true });
-  if (!announcement) {
+  const [updatedCount] = await Announcement.update(data, { where: { id } });
+  if (updatedCount === 0) {
     throw Object.assign(new Error('Không tìm thấy thông báo'), { statusCode: 404 });
   }
-  return announcement;
+  const announcement = await Announcement.findByPk(id);
+  return announcement.toJSON();
 };
 
 const remove = async (id) => {
-  const announcement = await Announcement.findByIdAndDelete(id);
+  const announcement = await Announcement.findByPk(id);
   if (!announcement) {
     throw Object.assign(new Error('Không tìm thấy thông báo'), { statusCode: 404 });
   }
-  return announcement;
+  await Announcement.destroy({ where: { id } });
+  return announcement.toJSON();
 };
 
 module.exports = { getAll, create, update, remove };

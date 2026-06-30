@@ -20,5 +20,7 @@ router.get('/estimated-salary', MyController.getEstimatedSalary);
 router.post('/shift-register/bulk', MyController.selfRegisterBulk);
 router.post('/shift-register', validate(selfRegisterValidator), MyController.selfRegister);
 router.delete('/shift-register/:id', MyController.cancelSelfRegister);
+router.get('/coworkers', MyController.getCoworkers);
+router.get('/coworker-shifts/:id', MyController.getCoworkerShifts);
 
 module.exports = router;

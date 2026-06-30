@@ -24,7 +24,7 @@ const updateProfileValidator = [
 const selfRegisterValidator = [
   body('shiftId')
     .notEmpty().withMessage('Ca làm việc là bắt buộc')
-    .isMongoId().withMessage('Ca làm việc không hợp lệ'),
+    .isInt({ min: 1 }).withMessage('Ca làm việc không hợp lệ'),
   body('date')
     .notEmpty().withMessage('Ngày là bắt buộc')
     .isISO8601().withMessage('Ngày không hợp lệ (định dạng YYYY-MM-DD)')

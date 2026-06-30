@@ -13,7 +13,7 @@ const createUserValidator = [
     .isEmail()
     .withMessage('Email không hợp lệ')
     .custom(async (value) => {
-      const existingUser = await User.findOne({ email: value.toLowerCase() });
+      const existingUser = await User.findOne({ where: { email: value.toLowerCase() } });
       if (existingUser) {
         return Promise.reject('Email đã tồn tại trong hệ thống');
       }

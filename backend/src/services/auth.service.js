@@ -5,8 +5,8 @@ const { generateAccessToken, generateRefreshToken, verifyRefreshToken } = requir
  * Đăng nhập người dùng, trả về tokens và thông tin cơ bản
  */
 const login = async (email, password) => {
-  // 1. Tìm user theo email (yêu cầu field select = false ở schema)
-  const user = await User.findOne({ email: email.toLowerCase() }).select('+password');
+  // 1. Tìm user theo email sử dụng scope withPassword để lấy password
+  const user = await User.scope('withPassword').findOne({ where: { email: email.toLowerCase() } });
   if (!user) {
     throw Object.assign(new Error('Email hoặc mật khẩu không đúng'), { statusCode: 401 });
   }
@@ -22,9 +22,9 @@ const login = async (email, password) => {
     throw Object.assign(new Error('Email hoặc mật khẩu không đúng'), { statusCode: 401 });
   }
 
-  // 4. Tạo token
-  const accessToken = generateAccessToken({ userId: user._id, role: user.role, email: user.email });
-  const refreshToken = generateRefreshToken({ userId: user._id });
+  // 4. Tạo token (sử dụng user.id thay vì user._id)
+  const accessToken = generateAccessToken({ userId: user.id, role: user.role, email: user.email });
+  const refreshToken = generateRefreshToken({ userId: user.id });
 
   // 5. Lưu refresh token vào database
   user.refreshToken = refreshToken;
@@ -35,7 +35,7 @@ const login = async (email, password) => {
     accessToken,
     refreshToken,
     user: {
-      _id: user._id,
+      _id: user.id, // giữ _id cho Frontend
       fullName: user.fullName,
       email: user.email,
       role: user.role,
@@ -61,13 +61,13 @@ const refreshAccessToken = async (refreshToken) => {
   }
 
   // Tìm user theo id từ token VÀ refresh token phải khớp trong db
-  const user = await User.findOne({ _id: decoded.userId, refreshToken });
+  const user = await User.findOne({ where: { id: decoded.userId, refreshToken } });
   if (!user) {
     throw Object.assign(new Error('Refresh token không hợp lệ'), { statusCode: 401 });
   }
 
   // Ký token mới
-  const accessToken = generateAccessToken({ userId: user._id, role: user.role, email: user.email });
+  const accessToken = generateAccessToken({ userId: user.id, role: user.role, email: user.email });
   
   return { accessToken };
 };
@@ -76,7 +76,7 @@ const refreshAccessToken = async (refreshToken) => {
  * Đăng xuất: xóa Refresh Token trong database
  */
 const logout = async (userId) => {
-  const user = await User.findById(userId);
+  const user = await User.findByPk(userId);
   if (user) {
     user.refreshToken = null;
     await user.save();

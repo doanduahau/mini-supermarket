@@ -1,15 +1,14 @@
 // ─── User Roles ───────────────────────────────────────────────────────────────
 const ROLES = Object.freeze({
-  ADMIN: 'admin',
-  MANAGER: 'manager',
+  SUPERMARKET_OWNER: 'supermarket_owner',
+  SHIFT_MANAGER: 'shift_manager',
   EMPLOYEE: 'employee',
 });
 
 // ─── Employee Status ──────────────────────────────────────────────────────────
 const EMPLOYEE_STATUS = Object.freeze({
   ACTIVE: 'active',
-  INACTIVE: 'inactive',
-  ON_LEAVE: 'on_leave',
+  LOCKED: 'locked',
 });
 
 // ─── Attendance Status ────────────────────────────────────────────────────────

@@ -3,7 +3,7 @@ const { body } = require('express-validator');
 const createBonusValidator = [
   body('employeeId')
     .notEmpty().withMessage('Nhân viên là bắt buộc')
-    .isMongoId().withMessage('ID nhân viên không hợp lệ'),
+    .isInt({ min: 1 }).withMessage('ID nhân viên không hợp lệ'),
   body('month')
     .notEmpty().withMessage('Tháng là bắt buộc')
     .isInt({ min: 1, max: 12 }).withMessage('Tháng phải từ 1 đến 12'),

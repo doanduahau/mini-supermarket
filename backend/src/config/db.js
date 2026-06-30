@@ -1,19 +1,22 @@
-const dns = require('dns');
-const mongoose = require('mongoose');
+const { Sequelize } = require('sequelize');
 
-// Force Google DNS — tránh VMware/ISP chặn DNS SRV lookup của MongoDB Atlas
-dns.setServers(['8.8.8.8', '8.8.4.4']);
+const sequelize = new Sequelize(process.env.DATABASE_URL, {
+  dialect: 'postgres',
+  logging: false,
+});
 
 const connectDB = async () => {
   try {
-    const conn = await mongoose.connect(process.env.MONGODB_URI, {
-      // Mongoose 6+ handles these options by default, kept for clarity
-    });
-    console.log(`✅ MongoDB connected: ${conn.connection.host}`);
+    await sequelize.authenticate();
+    console.log(`✅ PostgreSQL connected: ${sequelize.config.host}`);
+    // Tự động đồng bộ schema với database (tạo bảng nếu chưa có)
+    await sequelize.sync({ alter: false });
+    console.log('✅ Database schema synced');
   } catch (error) {
-    console.error(`❌ MongoDB connection error: ${error.message}`);
+    console.error(`❌ PostgreSQL connection error: ${error.message}`);
     process.exit(1);
   }
 };
 
 module.exports = connectDB;
+module.exports.sequelize = sequelize;

@@ -3,10 +3,10 @@ const { body } = require('express-validator');
 const createAssignmentValidator = [
   body('employeeId')
     .notEmpty().withMessage('Nhân viên là bắt buộc')
-    .isMongoId().withMessage('ID nhân viên không hợp lệ'),
+    .isInt({ min: 1 }).withMessage('ID nhân viên không hợp lệ'),
   body('shiftId')
     .notEmpty().withMessage('Ca làm việc là bắt buộc')
-    .isMongoId().withMessage('ID ca làm việc không hợp lệ'),
+    .isInt({ min: 1 }).withMessage('ID ca làm việc không hợp lệ'),
   body('date')
     .notEmpty().withMessage('Ngày làm việc là bắt buộc')
     .isISO8601().withMessage('Ngày không hợp lệ (định dạng YYYY-MM-DD)'),

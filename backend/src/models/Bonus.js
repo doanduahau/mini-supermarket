@@ -1,48 +1,77 @@
-const mongoose = require('mongoose');
+const { DataTypes } = require('sequelize');
+const { sequelize } = require('../config/db');
 
-const bonusSchema = new mongoose.Schema(
+const Bonus = sequelize.define(
+  'Bonus',
   {
-    employee: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: 'User',
-      required: [true, 'Employee is required'],
+    id: {
+      type: DataTypes.INTEGER,
+      autoIncrement: true,
+      primaryKey: true,
+    },
+    // Thuộc tính ảo _id để tương thích ngược với Frontend
+    _id: {
+      type: DataTypes.VIRTUAL,
+      get() {
+        return this.id;
+      },
+    },
+    // Khóa ngoại liên kết tới User (nhân viên nhận thưởng/phạt)
+    employeeId: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
     },
     month: {
-      type: Number,
-      required: [true, 'Month is required'],
-      min: [1, 'Month must be between 1 and 12'],
-      max: [12, 'Month must be between 1 and 12'],
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      validate: {
+        min: 1,
+        max: 12,
+      },
     },
     year: {
-      type: Number,
-      required: [true, 'Year is required'],
+      type: DataTypes.INTEGER,
+      allowNull: false,
     },
-    // Always stored as a positive number; the type field conveys direction
     amount: {
-      type: Number,
-      required: [true, 'Amount is required'],
-      min: [0, 'Amount must be positive'],
+      type: DataTypes.NUMERIC(14, 2),
+      allowNull: false,
+      validate: {
+        min: { args: [0], msg: 'Amount must be positive' },
+      },
     },
     type: {
-      type: String,
-      enum: ['bonus', 'penalty'],
-      required: [true, 'Type is required'],
+      type: DataTypes.ENUM('bonus', 'penalty'),
+      allowNull: false,
     },
     reason: {
-      type: String,
-      required: [true, 'Reason is required'],
-      trim: true,
+      type: DataTypes.TEXT,
+      allowNull: false,
+      validate: {
+        notEmpty: { msg: 'Reason is required' },
+      },
     },
-    createdBy: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: 'User',
-      default: null,
+    // Khóa ngoại liên kết tới User (người tạo)
+    createdById: {
+      type: DataTypes.INTEGER,
+      allowNull: true,
     },
   },
-  { timestamps: true }
+  {
+    timestamps: true,
+    indexes: [
+      {
+        fields: ['employeeId', 'year', 'month'],
+      },
+    ],
+  }
 );
 
-// ─── Index: efficient monthly payroll queries ─────────────────────────────────
-bonusSchema.index({ employee: 1, year: 1, month: 1 });
+// Ghi đè toJSON để đảm bảo virtual _id luôn có mặt
+Bonus.prototype.toJSON = function () {
+  const values = Object.assign({}, this.get());
+  values._id = this.id;
+  return values;
+};
 
-module.exports = mongoose.model('Bonus', bonusSchema);
+module.exports = Bonus;

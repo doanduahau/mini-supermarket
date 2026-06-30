@@ -21,6 +21,9 @@ const io = new Server(httpServer, {
 
 // Initialize socket handlers
 initSocket(io);
+// ─── Load Models (để Sequelize biết cần sync bảng nào) ─────────────────────
+require('./src/models'); // Đảm bảo tất cả associations được thiết lập trước sync
+
 // ─── Connect Database ───────────────────────────────────────────────────────
 connectDB();
 
@@ -50,6 +53,8 @@ app.use('/api/payroll',           require('./src/routes/payroll.routes'));
 app.use('/api/reports',           require('./src/routes/report.routes'));
 app.use('/api/settings',          require('./src/routes/settings.routes'));
 app.use('/api/announcements',     require('./src/routes/announcement.routes'));
+app.use('/api/leave-requests',    require('./src/routes/leaveRequest.routes'));
+app.use('/api/shift-swaps',       require('./src/routes/shiftSwap.routes'));
 
 if (process.env.NODE_ENV === 'development' || !process.env.NODE_ENV) {
   app.use('/api/dev', require('./src/routes/dev.routes'));

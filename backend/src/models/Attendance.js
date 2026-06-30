@@ -1,63 +1,125 @@
-const mongoose = require('mongoose');
+const { DataTypes } = require('sequelize');
+const { sequelize } = require('../config/db');
 
-const attendanceSchema = new mongoose.Schema(
+// Model chính: Attendance
+const Attendance = sequelize.define(
+  'Attendance',
   {
-    employee: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: 'User',
-      required: [true, 'Employee is required'],
+    id: {
+      type: DataTypes.INTEGER,
+      autoIncrement: true,
+      primaryKey: true,
     },
-    shift: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: 'Shift',
-      required: [true, 'Shift is required'],
+    // Thuộc tính ảo _id cho Frontend
+    _id: {
+      type: DataTypes.VIRTUAL,
+      get() {
+        return this.id;
+      },
+    },
+    employeeId: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+    },
+    shiftId: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
     },
     date: {
-      type: Date,
-      required: [true, 'Attendance date is required'],
+      type: DataTypes.DATEONLY,
+      allowNull: false,
     },
-    // Actual clock-in timestamp
     checkIn: {
-      type: Date,
-      default: null,
+      type: DataTypes.DATE,
+      allowNull: true,
+      defaultValue: null,
     },
-    // Actual clock-out timestamp
     checkOut: {
-      type: Date,
-      default: null,
+      type: DataTypes.DATE,
+      allowNull: true,
+      defaultValue: null,
     },
     note: {
-      type: String,
-      trim: true,
+      type: DataTypes.TEXT,
     },
-    // Manager who recorded this attendance entry
-    recordedBy: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: 'User',
-      default: null,
+    recordedById: {
+      type: DataTypes.INTEGER,
+      allowNull: true,
     },
     actualHours: {
-      type: Number,
-      default: null,
+      type: DataTypes.NUMERIC(6, 2),
+      allowNull: true,
+      defaultValue: null,
     },
-    editHistory: [
-      {
-        updatedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
-        updatedAt: { type: Date, default: Date.now },
-        oldCheckIn: { type: Date },
-        oldCheckOut: { type: Date },
-        newCheckIn: { type: Date },
-        newCheckOut: { type: Date },
-        note: { type: String },
-      },
-    ],
   },
   {
     timestamps: true,
+    indexes: [
+      {
+        unique: true,
+        fields: ['employeeId', 'shiftId', 'date'],
+      },
+      { fields: ['employeeId', 'date'] },
+      { fields: ['date'] },
+    ],
   }
 );
 
-attendanceSchema.index({ employee: 1, date: 1 });
-attendanceSchema.index({ date: 1 });
+Attendance.prototype.toJSON = function () {
+  const values = Object.assign({}, this.get());
+  values._id = this.id;
+  return values;
+};
 
-module.exports = mongoose.model('Attendance', attendanceSchema);
+// Model phụ: AttendanceEditHistory (thay thế cho mảng editHistory của Mongoose)
+const AttendanceEditHistory = sequelize.define(
+  'AttendanceEditHistory',
+  {
+    id: {
+      type: DataTypes.INTEGER,
+      autoIncrement: true,
+      primaryKey: true,
+    },
+    // Thuộc tính ảo _id cho Frontend
+    _id: {
+      type: DataTypes.VIRTUAL,
+      get() {
+        return this.id;
+      },
+    },
+    attendanceId: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+    },
+    updatedById: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+    },
+    oldCheckIn: {
+      type: DataTypes.DATE,
+    },
+    oldCheckOut: {
+      type: DataTypes.DATE,
+    },
+    newCheckIn: {
+      type: DataTypes.DATE,
+    },
+    newCheckOut: {
+      type: DataTypes.DATE,
+    },
+    note: {
+      type: DataTypes.TEXT,
+    },
+  },
+  {
+    timestamps: true, // updatedAt sẽ tự động được sinh ra
+  }
+);
+
+AttendanceEditHistory.prototype.toJSON = function () {
+  const values = Object.assign({}, this.get());
+  values._id = this.id;
+  return values;
+};
+
+module.exports = { Attendance, AttendanceEditHistory };

@@ -4,6 +4,11 @@ const ROLES = Object.freeze({
   SHIFT_MANAGER: 'shift_manager',
   EMPLOYEE: 'employee',
 });
+const ROLE_LABELS = Object.freeze({
+  supermarket_owner: 'Chủ siêu thị',
+  shift_manager: 'Quản lý ca',
+  employee: 'Nhân viên',
+});
 
 // ─── Employee Status ──────────────────────────────────────────────────────────
 const EMPLOYEE_STATUS = Object.freeze({
@@ -26,4 +31,4 @@ const PAGINATION = Object.freeze({
   MAX_LIMIT: 100,
 });
 
-module.exports = { ROLES, EMPLOYEE_STATUS, ATTENDANCE_STATUS, PAGINATION };
+module.exports = { ROLES, ROLE_LABELS, EMPLOYEE_STATUS, ATTENDANCE_STATUS, PAGINATION };

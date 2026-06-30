@@ -50,6 +50,10 @@ const Attendance = sequelize.define(
       type: DataTypes.NUMERIC(6, 2),
       allowNull: true,
       defaultValue: null,
+      get() {
+        const value = this.getDataValue("actualHours");
+        return value === null ? null : Number(value);
+      }
     },
   },
   {

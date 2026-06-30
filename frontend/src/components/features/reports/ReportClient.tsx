@@ -161,11 +161,11 @@ export default function ReportClient() {
         </div>
 
         {/* Chart 2: Shift Utilization */}
-        <div className="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm">
+        <div className="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm flex flex-col">
           <h3 className="text-lg font-bold text-gray-900 mb-6 flex items-center gap-2">
             Hiệu suất lấp đầy ca làm việc
           </h3>
-          <div className="h-[300px]">
+          <div className="h-[250px] mb-4">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={shiftChartData} margin={{ top: 20, right: 30, left: 0, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} />
@@ -176,6 +176,20 @@ export default function ReportClient() {
               </BarChart>
             </ResponsiveContainer>
           </div>
+          {shiftData.some((s: any) => s.shortStaffedDays && s.shortStaffedDays.length > 0) && (
+            <div className="p-4 bg-red-50 border border-red-100 rounded-xl overflow-y-auto max-h-[100px]">
+              <h4 className="text-sm font-bold text-red-700 mb-2">Cảnh báo thiếu nhân sự (Dưới mức yêu cầu tối thiểu):</h4>
+              <ul className="list-disc list-inside text-xs text-red-600 space-y-1">
+                {shiftData.map((s: any) => 
+                  s.shortStaffedDays?.map((d: string, i: number) => (
+                    <li key={`${s.shift.name}-${i}`}>
+                      <span className="font-semibold">Ca {s.shift.name}:</span> Ngày {d}
+                    </li>
+                  ))
+                )}
+              </ul>
+            </div>
+          )}
         </div>
 
         {/* Chart 3: Top Employees by Hours */}

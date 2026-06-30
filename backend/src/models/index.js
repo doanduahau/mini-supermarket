@@ -8,6 +8,8 @@ const SalaryConfig = require('./SalaryConfig');
 const Bonus = require('./Bonus');
 const Announcement = require('./Announcement');
 const ShiftAssignment = require('./ShiftAssignment');
+const LeaveRequest = require('./LeaveRequest');
+const ShiftSwapRequest = require('./ShiftSwapRequest');
 
 // Models export objects with sub-models
 const { Attendance, AttendanceEditHistory } = require('./Attendance');
@@ -44,6 +46,18 @@ Payroll.hasMany(PayrollBonusRecord, { foreignKey: 'payrollId', as: 'bonusRecords
 // ANNOUNCEMENT
 Announcement.belongsTo(User, { foreignKey: 'authorId', as: 'author' });
 
+// LEAVE REQUEST
+LeaveRequest.belongsTo(User, { foreignKey: 'employeeId', as: 'employee' });
+LeaveRequest.belongsTo(ShiftAssignment, { foreignKey: 'shiftAssignmentId', as: 'shiftAssignment' });
+LeaveRequest.belongsTo(User, { foreignKey: 'reviewedBy', as: 'reviewer' });
+
+// SHIFT SWAP REQUEST
+ShiftSwapRequest.belongsTo(User, { foreignKey: 'requesterId', as: 'requester' });
+ShiftSwapRequest.belongsTo(User, { foreignKey: 'receiverId', as: 'receiver' });
+ShiftSwapRequest.belongsTo(ShiftAssignment, { foreignKey: 'sourceAssignmentId', as: 'sourceAssignment' });
+ShiftSwapRequest.belongsTo(ShiftAssignment, { foreignKey: 'targetAssignmentId', as: 'targetAssignment' });
+ShiftSwapRequest.belongsTo(User, { foreignKey: 'reviewedBy', as: 'reviewer' });
+
 // ==========================================
 // EXPORT
 // ==========================================
@@ -61,4 +75,6 @@ module.exports = {
   Payroll,
   PayrollAttendanceRecord,
   PayrollBonusRecord,
+  LeaveRequest,
+  ShiftSwapRequest,
 };

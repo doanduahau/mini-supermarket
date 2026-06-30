@@ -28,6 +28,7 @@ export function Modal({ isOpen, onClose, title, children, footer, size = 'md' }:
           
           <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 shrink-0">
             <Dialog.Title className="text-xl font-extrabold text-gray-900">{title}</Dialog.Title>
+            <Dialog.Description className="sr-only">{title}</Dialog.Description>
             <Dialog.Close asChild>
               <button className="p-2 -mr-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-xl transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500">
                 <X className="w-5 h-5" />

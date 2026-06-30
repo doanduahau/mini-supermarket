@@ -32,7 +32,7 @@ const ShiftAssignment = sequelize.define(
       allowNull: false,
     },
     status: {
-      type: DataTypes.ENUM('pending', 'approved', 'rejected'),
+      type: DataTypes.ENUM('pending', 'approved', 'rejected', 'cancelled_by_leave', 'swapped'),
       defaultValue: 'pending',
     },
     // Khóa ngoại liên kết tới User (người phân công)

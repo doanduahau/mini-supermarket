@@ -55,6 +55,17 @@ const Shift = sequelize.define(
         },
       },
     },
+    minEmployees: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      defaultValue: 1,
+      validate: {
+        min: {
+          args: [0],
+          msg: 'Must allow at least 0 employee',
+        },
+      },
+    },
     description: {
       type: DataTypes.STRING,
     },

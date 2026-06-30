@@ -63,8 +63,6 @@ const create = async (data, createdBy) => {
  * Update user fields.
  */
 const update = async (id, data) => {
-  delete data.password;
-  delete data.role;
   delete data.refreshToken;
 
   if (data.email) {
@@ -77,11 +75,13 @@ const update = async (id, data) => {
     if (existing) throw Object.assign(new Error('Email đã được sử dụng'), { statusCode: 400 });
   }
 
-  await User.update(data, { where: { id } });
-  
-  const user = await User.findByPk(id);
+  const user = await User.findByPk(id, { scope: 'withPassword' });
   if (!user) throw Object.assign(new Error('Không tìm thấy nhân viên'), { statusCode: 404 });
-  return user.toJSON();
+
+  await user.update(data);
+  
+  const updatedUser = await User.findByPk(id);
+  return updatedUser.toJSON();
 };
 
 /**

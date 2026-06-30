@@ -1,20 +1,33 @@
+const jwt = require('jsonwebtoken');
+
 let ioInstance;
 const connectedUsers = new Map();
 
 function initSocket(io) {
   ioInstance = io;
+
+  io.use((socket, next) => {
+    const token = socket.handshake.auth?.token;
+    if (!token) {
+      return next(new Error('Authentication error: Token missing'));
+    }
+    try {
+      const decoded = jwt.verify(token, process.env.JWT_SECRET || 'secret');
+      socket.userId = decoded.id ? decoded.id.toString() : decoded._id.toString();
+      next();
+    } catch (err) {
+      return next(new Error('Authentication error: Invalid token'));
+    }
+  });
+
   io.on('connection', (socket) => {
-    socket.on('register', (userId) => {
-      if (!userId) return;
-      connectedUsers.set(userId.toString(), socket.id);
-      socket.userId = userId.toString();
-      console.log(`Socket.IO User registered: ${userId}`);
-    });
+    if (socket.userId) {
+      connectedUsers.set(socket.userId, socket.id);
+    }
 
     socket.on('disconnect', () => {
       if (socket.userId) {
         connectedUsers.delete(socket.userId);
-        console.log(`Socket.IO User disconnected: ${socket.userId}`);
       }
     });
   });

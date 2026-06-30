@@ -3,6 +3,7 @@ const { User, SalaryConfig, Attendance, Bonus, Payroll, PayrollAttendanceRecord,
 const { sendMail } = require('../utils/mailer');
 const templates = require('../utils/emailTemplates');
 const { sendNotificationToUser } = require('../socket/socket.handler');
+const { sequelize } = require('../config/db');
 
 const mapPayrollOutput = (p) => {
   if (!p) return null;
@@ -61,9 +62,14 @@ const calculateForEmployee = async (employeeId, month, year, isPreview = false) 
       order: [['effectiveFrom', 'DESC']]
     });
     
-    if (!attendanceConfig) continue;
+    // Ưu tiên dùng lương riêng của user, nếu không có mới lấy lương chung theo role
+    const appliedHourlyRate = user.hourlyRate 
+      ? Number(user.hourlyRate) 
+      : (attendanceConfig ? Number(attendanceConfig.hourlyRate) : 0);
+
+    if (appliedHourlyRate === 0) continue;
     
-    const salary = Math.round(Number(attendance.actualHours) * Number(attendanceConfig.hourlyRate));
+    const salary = Math.round(Number(attendance.actualHours) * appliedHourlyRate);
     baseSalary += salary;
     totalHours += Number(attendance.actualHours);
 
@@ -72,7 +78,7 @@ const calculateForEmployee = async (employeeId, month, year, isPreview = false) 
       shiftId: attendance.shift ? attendance.shift.id : null,
       shiftName: attendance.shift ? attendance.shift.name : null,
       actualHours: attendance.actualHours,
-      hourlyRate: attendanceConfig.hourlyRate,
+      hourlyRate: appliedHourlyRate,
       salary,
       checkIn: attendance.checkIn,
       checkOut: attendance.checkOut
@@ -131,24 +137,25 @@ const createOrUpdateDraft = async (employeeId, month, year, createdBy) => {
   const calculated = await calculateForEmployee(employeeId, month, year);
   const { breakdown, ...payrollData } = calculated;
 
-  if (payroll) {
-    await Payroll.update(
-      { ...payrollData, status: 'draft', note: '' },
-      { where: { id: payroll.id } }
-    );
-    payroll = await Payroll.findByPk(payroll.id);
-  } else {
-    payroll = await Payroll.create({ ...payrollData, status: 'draft', note: '' });
-  }
+  await sequelize.transaction(async (t) => {
+    if (payroll) {
+      await Payroll.update(
+        { ...payrollData, status: 'draft', note: '' },
+        { where: { id: payroll.id }, transaction: t }
+      );
+    } else {
+      payroll = await Payroll.create({ ...payrollData, status: 'draft', note: '' }, { transaction: t });
+    }
 
-  await PayrollAttendanceRecord.destroy({ where: { payrollId: payroll.id } });
-  await PayrollBonusRecord.destroy({ where: { payrollId: payroll.id } });
+    await PayrollAttendanceRecord.destroy({ where: { payrollId: payroll.id }, transaction: t });
+    await PayrollBonusRecord.destroy({ where: { payrollId: payroll.id }, transaction: t });
 
-  const attRecordsToInsert = breakdown.attendanceRecords.map(r => ({ ...r, payrollId: payroll.id }));
-  const bonusRecordsToInsert = breakdown.bonusRecords.map(r => ({ ...r, payrollId: payroll.id }));
+    const attRecordsToInsert = breakdown.attendanceRecords.map(r => ({ ...r, payrollId: payroll.id }));
+    const bonusRecordsToInsert = breakdown.bonusRecords.map(r => ({ ...r, payrollId: payroll.id }));
 
-  if (attRecordsToInsert.length) await PayrollAttendanceRecord.bulkCreate(attRecordsToInsert);
-  if (bonusRecordsToInsert.length) await PayrollBonusRecord.bulkCreate(bonusRecordsToInsert);
+    if (attRecordsToInsert.length) await PayrollAttendanceRecord.bulkCreate(attRecordsToInsert, { transaction: t });
+    if (bonusRecordsToInsert.length) await PayrollBonusRecord.bulkCreate(bonusRecordsToInsert, { transaction: t });
+  });
 
   return getPayrollById(payroll.id);
 };

@@ -15,6 +15,7 @@ interface Shift {
   startTime: string;
   endTime: string;
   maxEmployees: number;
+  minEmployees: number;
   description?: string;
 }
 
@@ -34,6 +35,7 @@ function ShiftFormModal({
     startTime: shift?.startTime || '',
     endTime: shift?.endTime || '',
     maxEmployees: shift?.maxEmployees ?? 3,
+    minEmployees: shift?.minEmployees ?? 1,
     description: shift?.description || '',
   });
   const [loading, setLoading] = useState(false);
@@ -43,6 +45,10 @@ function ShiftFormModal({
     e.preventDefault();
     if (!form.name || !form.startTime || !form.endTime) {
       setError('Vui lòng điền đầy đủ thông tin bắt buộc.');
+      return;
+    }
+    if (form.minEmployees > form.maxEmployees) {
+      setError('Số nhân viên tối thiểu không thể lớn hơn số tối đa.');
       return;
     }
     setLoading(true);
@@ -93,11 +99,19 @@ function ShiftFormModal({
             </div>
           </div>
 
-          <div>
-            <label className="text-sm font-semibold text-gray-700 block mb-1.5">Số nhân viên tối đa <span className="text-red-500">*</span></label>
-            <input type="number" min={1} max={20} value={form.maxEmployees}
-              onChange={e => setForm(f => ({ ...f, maxEmployees: Number(e.target.value) }))}
-              className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="text-sm font-semibold text-gray-700 block mb-1.5">Nhân viên tối thiểu <span className="text-red-500">*</span></label>
+              <input type="number" min={0} max={20} value={form.minEmployees}
+                onChange={e => setForm(f => ({ ...f, minEmployees: Number(e.target.value) }))}
+                className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+            </div>
+            <div>
+              <label className="text-sm font-semibold text-gray-700 block mb-1.5">Số nhân viên tối đa <span className="text-red-500">*</span></label>
+              <input type="number" min={1} max={20} value={form.maxEmployees}
+                onChange={e => setForm(f => ({ ...f, maxEmployees: Number(e.target.value) }))}
+                className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+            </div>
           </div>
 
           <div>
@@ -451,10 +465,16 @@ export default function ShiftClient({ initialShifts }: { initialShifts: Shift[] 
                   {shift.startTime} - {shift.endTime}
                 </div>
                 <div className="flex items-center justify-between mt-4 pt-4 border-t border-gray-50">
-                  <div className="flex items-center gap-1.5 text-sm font-semibold text-gray-500">
-                    <Users className="w-4 h-4" /> Số lượng tối đa:
+                  <div className="flex flex-col gap-2 w-full">
+                    <div className="flex justify-between items-center text-sm font-semibold text-gray-500">
+                      <span className="flex items-center gap-1.5"><Users className="w-4 h-4" /> Yêu cầu tối thiểu:</span>
+                      <span className="bg-red-50 text-red-700 text-xs font-bold px-2 py-1 rounded-lg">{shift.minEmployees} NV</span>
+                    </div>
+                    <div className="flex justify-between items-center text-sm font-semibold text-gray-500">
+                      <span className="flex items-center gap-1.5"><Users className="w-4 h-4" /> Giới hạn tối đa:</span>
+                      <span className="bg-gray-100 text-gray-800 text-xs font-bold px-2 py-1 rounded-lg">{shift.maxEmployees} NV</span>
+                    </div>
                   </div>
-                  <span className="bg-gray-100 text-gray-800 text-xs font-bold px-2 py-1 rounded-lg">{shift.maxEmployees} NV</span>
                 </div>
                 {shift.description && (
                   <p className="text-xs text-gray-400 mt-2 line-clamp-1">{shift.description}</p>
@@ -513,12 +533,13 @@ export default function ShiftClient({ initialShifts }: { initialShifts: Shift[] 
                     const approved = cellAssignments.filter(a => a.status === 'approved');
                     const pending = cellAssignments.filter(a => a.status === 'pending');
                     const isFull = approved.length >= shift.maxEmployees;
+                    const isShort = approved.length < shift.minEmployees;
 
                     return (
                       <div key={day.toISOString()}
                         onClick={() => setSelectedCell({ shift, date: day, assignments: cellAssignments })}
                         className={`p-2 border-r border-gray-100 last:border-0 min-h-[100px] hover:bg-gray-50 cursor-pointer transition-colors flex flex-col relative group ${
-                          isFull ? 'bg-green-50/20' : pending.length > 0 ? 'bg-yellow-50/30' : 'bg-red-50/10'
+                          isFull ? 'bg-green-50/20' : isShort ? 'bg-red-50/20' : pending.length > 0 ? 'bg-yellow-50/30' : 'bg-gray-50/10'
                         }`}>
                         
                         {/* Hover Overlay */}
@@ -548,8 +569,14 @@ export default function ShiftClient({ initialShifts }: { initialShifts: Shift[] 
 
                         {/* Bottom Status */}
                         <div className="mt-auto self-end group-hover:opacity-0 transition-opacity">
-                          <span className={`text-[10px] font-bold px-2 py-1 rounded-md ${isFull ? 'text-green-600 bg-green-100' : 'text-red-600 bg-red-100'}`}>
-                            {isFull ? 'Đủ NV' : `Trống ${shift.maxEmployees - approved.length}`}
+                          <span className={`text-[10px] font-bold px-2 py-1 rounded-md ${
+                            isFull 
+                              ? 'text-green-600 bg-green-100' 
+                              : isShort 
+                                ? 'text-red-600 bg-red-100' 
+                                : 'text-blue-600 bg-blue-100'
+                          }`}>
+                            {isFull ? 'Đủ NV' : isShort ? `Thiếu ${shift.minEmployees - approved.length}` : `Trống ${shift.maxEmployees - approved.length}`}
                           </span>
                         </div>
                       </div>

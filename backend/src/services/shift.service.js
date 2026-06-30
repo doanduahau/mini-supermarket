@@ -21,6 +21,12 @@ const create = async (data) => {
     throw Object.assign(new Error('Thời gian kết thúc phải sau thời gian bắt đầu'), { statusCode: 400 });
   }
 
+  const max = data.maxEmployees !== undefined ? Number(data.maxEmployees) : 3;
+  const min = data.minEmployees !== undefined ? Number(data.minEmployees) : 1;
+  if (min > max) {
+    throw Object.assign(new Error('Số nhân viên tối thiểu không thể lớn hơn tối đa'), { statusCode: 400 });
+  }
+
   const existing = await Shift.findOne({ 
     where: { 
       name: { [Op.iLike]: name } 
@@ -44,6 +50,12 @@ const update = async (id, data) => {
 
   if (parseTime(newEndTime) <= parseTime(newStartTime)) {
     throw Object.assign(new Error('Thời gian kết thúc phải sau thời gian bắt đầu'), { statusCode: 400 });
+  }
+
+  const newMax = data.maxEmployees !== undefined ? Number(data.maxEmployees) : shift.maxEmployees;
+  const newMin = data.minEmployees !== undefined ? Number(data.minEmployees) : shift.minEmployees;
+  if (newMin > newMax) {
+    throw Object.assign(new Error('Số nhân viên tối thiểu không thể lớn hơn tối đa'), { statusCode: 400 });
   }
 
   if (data.startTime !== shift.startTime || data.endTime !== shift.endTime) {

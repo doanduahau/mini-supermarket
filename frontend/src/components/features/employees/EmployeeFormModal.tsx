@@ -16,6 +16,7 @@ const schema = z.object({
   phone: z.string().optional(),
   bankAccount: z.string().optional(),
   bankName: z.string().optional(),
+  hourlyRate: z.string().optional(),
 });
 
 type FormData = z.infer<typeof schema>;
@@ -41,7 +42,8 @@ export default function EmployeeFormModal({ isOpen, onClose, employee, onSuccess
           phone: employee.phone || '', 
           password: '',
           bankAccount: employee.bankAccount || '',
-          bankName: employee.bankName || ''
+          bankName: employee.bankName || '',
+          hourlyRate: employee.hourlyRate ? String(employee.hourlyRate) : ''
         });
       } else {
         reset({ 
@@ -51,7 +53,8 @@ export default function EmployeeFormModal({ isOpen, onClose, employee, onSuccess
           phone: '', 
           password: '',
           bankAccount: '',
-          bankName: ''
+          bankName: '',
+          hourlyRate: ''
         });
       }
     }
@@ -65,9 +68,12 @@ export default function EmployeeFormModal({ isOpen, onClose, employee, onSuccess
         return;
       }
       
-      const payload = { ...data };
+      const payload: any = { ...data };
       if (isEdit && !payload.password) {
         delete payload.password;
+      }
+      if (!payload.hourlyRate) {
+        payload.hourlyRate = null;
       }
 
       if (isEdit) {
@@ -77,7 +83,13 @@ export default function EmployeeFormModal({ isOpen, onClose, employee, onSuccess
       }
       onSuccess();
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Có lỗi xảy ra');
+      const data = err.response?.data;
+      if (data?.errors && Array.isArray(data.errors) && data.errors.length > 0) {
+        const errorDetails = data.errors.map((e: any) => e.message).join(', ');
+        setError(`${data.message || 'Lỗi dữ liệu'}: ${errorDetails}`);
+      } else {
+        setError(data?.message || 'Có lỗi xảy ra');
+      }
     }
   };
 
@@ -135,6 +147,12 @@ export default function EmployeeFormModal({ isOpen, onClose, employee, onSuccess
             <label className="block text-sm font-semibold text-gray-700 mb-1.5">Số tài khoản</label>
             <input {...register('bankAccount')} className="w-full px-4 py-2.5 border border-gray-200 hover:border-gray-300 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors shadow-sm" placeholder="VD: 1903..." />
           </div>
+        </div>
+
+        <div className="border-t border-gray-100 pt-4 mt-2">
+          <label className="block text-sm font-semibold text-gray-700 mb-1.5">Mức lương riêng / Giờ (Tùy chọn)</label>
+          <input type="number" {...register('hourlyRate')} className="w-full px-4 py-2.5 border border-gray-200 hover:border-gray-300 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors shadow-sm" placeholder="Bỏ trống để dùng lương mặc định của hệ thống..." />
+          <p className="text-xs text-gray-400 mt-1.5">Nếu nhập số ở đây, hệ thống sẽ ưu tiên tính lương cho nhân viên này theo mức này thay vì cấu hình chung.</p>
         </div>
 
         <div className="flex justify-end gap-3 mt-8 pt-4 border-t border-gray-100">

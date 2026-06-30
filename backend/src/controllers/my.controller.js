@@ -1,7 +1,8 @@
 const MyService = require('../services/my.service');
 const { successResponse } = require('../utils/response');
 const bcrypt = require('bcryptjs');
-const User = require('../models/User');
+const { User, ShiftAssignment, Shift } = require('../models');
+const { Op } = require('sequelize');
 
 const getProfile = async (req, res, next) => {
   try {
@@ -143,6 +144,39 @@ const changePassword = async (req, res, next) => {
   }
 };
 
+const getCoworkers = async (req, res, next) => {
+  try {
+    const users = await User.findAll({
+      where: { status: 'active', id: { [Op.ne]: req.user.id } },
+      attributes: ['id', '_id', 'fullName', 'email', 'role', 'avatar']
+    });
+    return successResponse(res, users, 'Danh sách đồng nghiệp');
+  } catch (err) {
+    next(err);
+  }
+};
+
+const getCoworkerShifts = async (req, res, next) => {
+  try {
+    const employeeId = req.params.id;
+    const today = new Date();
+    today.setUTCHours(0, 0, 0, 0);
+
+    const assignments = await ShiftAssignment.findAll({
+      where: {
+        employeeId,
+        status: 'approved',
+        date: { [Op.gte]: today }
+      },
+      include: [{ model: Shift, as: 'shift', attributes: ['id', '_id', 'name', 'startTime', 'endTime'] }],
+      order: [['date', 'ASC']]
+    });
+    return successResponse(res, assignments, 'Danh sách ca của đồng nghiệp');
+  } catch (err) {
+    next(err);
+  }
+};
+
 module.exports = {
   getProfile,
   updateProfile,
@@ -155,5 +189,7 @@ module.exports = {
   getEstimatedSalary,
   selfRegister,
   selfRegisterBulk,
-  cancelSelfRegister
+  cancelSelfRegister,
+  getCoworkers,
+  getCoworkerShifts
 };

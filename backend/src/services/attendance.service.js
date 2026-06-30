@@ -1,5 +1,5 @@
 const { Op } = require('sequelize');
-const { Attendance, AttendanceEditHistory, User, Shift } = require('../models');
+const { Attendance, AttendanceEditHistory, User, Shift, Payroll } = require('../models');
 
 const getAll = async ({ date, employeeId, shiftId, month, year, page = 1, limit = 20 }) => {
   const where = {};
@@ -66,8 +66,38 @@ const getById = async (id) => {
   return attendance.toJSON();
 };
 
-const calcActualHours = (checkIn, checkOut) => {
-  let diff = (new Date(checkOut) - new Date(checkIn)) / 3_600_000;
+const getShiftTimes = (date, shift) => {
+  if (!shift || !shift.startTime || !shift.endTime) return { start: null, end: null };
+  const [sh, sm] = shift.startTime.split(':').map(Number);
+  const [eh, em] = shift.endTime.split(':').map(Number);
+  
+  const start = new Date(date);
+  start.setHours(sh, sm, 0, 0);
+  
+  const end = new Date(date);
+  end.setHours(eh, em, 0, 0);
+  
+  if (eh < sh) {
+    end.setDate(end.getDate() + 1);
+  }
+  
+  return { start, end };
+};
+
+const calcActualHours = (checkIn, checkOut, shiftStart, shiftEnd) => {
+  let inTime = new Date(checkIn);
+  let outTime = new Date(checkOut);
+
+  if (shiftStart && inTime < shiftStart) {
+    inTime = shiftStart;
+  }
+  if (shiftEnd && outTime > shiftEnd) {
+    outTime = shiftEnd;
+  }
+
+  if (outTime < inTime) return 0;
+
+  let diff = (outTime - inTime) / 3_600_000;
   if (diff > 6) diff -= 0.5;
   return Math.round(diff * 100) / 100;
 };
@@ -93,7 +123,8 @@ const processAutoCheckOut = async (attendances) => {
 
       if (diffMinutes > 30) {
         att.checkOut = shiftEndTime;
-        att.actualHours = calcActualHours(att.checkIn, att.checkOut);
+        const { start, end } = getShiftTimes(att.date, att.shift);
+        att.actualHours = calcActualHours(att.checkIn, att.checkOut, start, end);
         att.note = (att.note ? att.note + '\n' : '') + '[Hệ thống tự động Check-out]';
 
         updates.push(
@@ -112,10 +143,27 @@ const processAutoCheckOut = async (attendances) => {
   return attendances;
 };
 
+const checkPayrollLock = async (employeeId, date) => {
+  const d = new Date(date);
+  const payroll = await Payroll.findOne({
+    where: {
+      employeeId,
+      month: d.getMonth() + 1,
+      year: d.getFullYear(),
+      status: 'confirmed'
+    }
+  });
+  if (payroll) {
+    throw Object.assign(new Error('Tháng này đã chốt lương, không thể thay đổi dữ liệu chấm công'), { statusCode: 400 });
+  }
+};
+
 const checkIn = async (attendanceId, checkInTime, recordedBy) => {
   const attendance = await Attendance.findByPk(attendanceId, { include: [{ model: Shift, as: 'shift' }] });
   if (!attendance) throw Object.assign(new Error('Không tìm thấy bản ghi chấm công'), { statusCode: 404 });
   if (attendance.checkIn) throw Object.assign(new Error('Nhân viên đã được check-in'), { statusCode: 400 });
+
+  await checkPayrollLock(attendance.employeeId, attendance.date);
 
   const cIn = checkInTime ? new Date(checkInTime) : new Date();
 
@@ -141,10 +189,12 @@ const checkIn = async (attendanceId, checkInTime, recordedBy) => {
 };
 
 const checkOut = async (attendanceId, checkOutTime, recordedBy) => {
-  const attendance = await Attendance.findByPk(attendanceId);
+  const attendance = await Attendance.findByPk(attendanceId, { include: [{ model: Shift, as: 'shift' }] });
   if (!attendance) throw Object.assign(new Error('Không tìm thấy bản ghi chấm công'), { statusCode: 404 });
   if (!attendance.checkIn) throw Object.assign(new Error('Chưa có check-in, không thể check-out'), { statusCode: 400 });
   if (attendance.checkOut) throw Object.assign(new Error('Nhân viên đã được check-out'), { statusCode: 400 });
+
+  await checkPayrollLock(attendance.employeeId, attendance.date);
 
   const cOut = checkOutTime ? new Date(checkOutTime) : new Date();
 
@@ -152,7 +202,8 @@ const checkOut = async (attendanceId, checkOutTime, recordedBy) => {
     throw Object.assign(new Error('Thời gian check-out phải sau check-in ít nhất 30 phút'), { statusCode: 400 });
   }
 
-  const actualHours = calcActualHours(attendance.checkIn, cOut);
+  const { start, end } = getShiftTimes(attendance.date, attendance.shift);
+  const actualHours = calcActualHours(attendance.checkIn, cOut, start, end);
 
   await Attendance.update(
     { checkOut: cOut, actualHours, recordedById: recordedBy },
@@ -163,8 +214,10 @@ const checkOut = async (attendanceId, checkOutTime, recordedBy) => {
 };
 
 const manualUpdate = async (id, { checkIn, checkOut, note }, updatedBy) => {
-  const attendance = await Attendance.findByPk(id);
+  const attendance = await Attendance.findByPk(id, { include: [{ model: Shift, as: 'shift' }] });
   if (!attendance) throw Object.assign(new Error('Không tìm thấy bản ghi chấm công'), { statusCode: 404 });
+
+  await checkPayrollLock(attendance.employeeId, attendance.date);
 
   const oldCheckIn = attendance.checkIn;
   const oldCheckOut = attendance.checkOut;
@@ -180,7 +233,8 @@ const manualUpdate = async (id, { checkIn, checkOut, note }, updatedBy) => {
     if ((new Date(finalCheckOut) - new Date(finalCheckIn)) < 0) {
       throw Object.assign(new Error('Thời gian check-out phải sau check-in'), { statusCode: 400 });
     }
-    updates.actualHours = calcActualHours(finalCheckIn, finalCheckOut);
+    const { start, end } = getShiftTimes(attendance.date, attendance.shift);
+    updates.actualHours = calcActualHours(finalCheckIn, finalCheckOut, start, end);
   } else {
     updates.actualHours = null;
   }

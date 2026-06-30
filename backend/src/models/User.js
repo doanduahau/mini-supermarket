@@ -65,6 +65,11 @@ const User = sequelize.define(
       type: DataTypes.STRING,
       defaultValue: null,
     },
+    hourlyRate: {
+      type: DataTypes.NUMERIC(10, 2),
+      defaultValue: null,
+      comment: 'Mức lương/giờ riêng của nhân viên (nếu null, dùng SalaryConfig theo role)',
+    },
     startDate: {
       type: DataTypes.DATE,
       defaultValue: DataTypes.NOW,

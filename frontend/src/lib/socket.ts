@@ -12,11 +12,11 @@ export function getSocket(): Socket {
   return socket;
 }
 
-export function connectSocket(userId: string) {
+export function connectSocket(token: string) {
   const s = getSocket();
+  s.auth = { token };
   if (!s.connected) {
     s.connect();
-    s.emit('register', userId);
   }
 }
 

@@ -32,7 +32,14 @@ export default function BonusFormModal({ onClose }: { onClose: () => void }) {
     setLoading(true);
     setError('');
     try {
-      await axiosInstance.post('/bonuses', { ...form, amount: Number(form.amount) });
+      await axiosInstance.post('/bonus', {
+        employeeId: form.employee,
+        type: form.type,
+        amount: Number(form.amount),
+        reason: form.reason,
+        month: form.month,
+        year: form.year,
+      });
       router.refresh();
       onClose();
     } catch (err: any) {
@@ -57,7 +64,7 @@ export default function BonusFormModal({ onClose }: { onClose: () => void }) {
             <select value={form.employee} onChange={e => setForm({ ...form, employee: e.target.value })}
               className="w-full border border-gray-200 rounded-xl px-4 py-2 focus:ring-2 focus:ring-blue-500 bg-white">
               <option value="">-- Chọn nhân viên --</option>
-              {employees.map(emp => <option key={emp._id} value={emp._id}>{emp.fullName}</option>)}
+              {employees.map(emp => <option key={emp.id || emp._id} value={emp.id || emp._id}>{emp.fullName}</option>)}
             </select>
           </div>
 

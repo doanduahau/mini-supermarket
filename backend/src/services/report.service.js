@@ -258,12 +258,22 @@ const getShiftUtilization = async (month, year) => {
       leastStaffedDate = "Tất cả các ngày đều trống";
     }
 
+    const shortStaffedDays = [];
+    for (let d = 1; d <= daysInMonth; d++) {
+      const dateStr = `${y}-${String(m).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+      const count = dateCountMap[dateStr] || 0;
+      if (count < shift.minEmployees) {
+        shortStaffedDays.push(`${dateStr} (Đang có ${count}/${shift.minEmployees} NV)`);
+      }
+    }
+
     result.push({
-      shift: { name: shift.name, startTime: shift.startTime, endTime: shift.endTime },
+      shift: { name: shift.name, startTime: shift.startTime, endTime: shift.endTime, minEmployees: shift.minEmployees, maxEmployees: shift.maxEmployees },
       utilizationRate,
       totalAssigned,
       totalSlots,
-      leastStaffedDate
+      leastStaffedDate,
+      shortStaffedDays
     });
   }
 

@@ -45,7 +45,6 @@ const Attendance = sequelize.define(
     recordedById: {
       type: DataTypes.INTEGER,
       allowNull: true,
-      defaultValue: null,
     },
     actualHours: {
       type: DataTypes.NUMERIC(6, 2),
@@ -56,6 +55,10 @@ const Attendance = sequelize.define(
   {
     timestamps: true,
     indexes: [
+      {
+        unique: true,
+        fields: ['employeeId', 'shiftId', 'date'],
+      },
       { fields: ['employeeId', 'date'] },
       { fields: ['date'] },
     ],

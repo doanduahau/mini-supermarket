@@ -17,6 +17,7 @@ import {
   Banknote,
   LogOut,
   Bell,
+  ArrowRightLeft,
 } from 'lucide-react';
 import { ROLE_LABELS } from '@/lib/constants';
 
@@ -26,13 +27,17 @@ const MENU_ITEMS = [
   
   { label: 'Nhân viên', href: '/employees', icon: Users, roles: ['supermarket_owner', 'shift_manager'] },
   { label: 'Ca làm việc', href: '/shifts', icon: Calendar, roles: ['supermarket_owner', 'shift_manager'] },
-  { label: 'Chấm công', href: '/attendance', icon: ClipboardCheck, roles: ['supermarket_owner', 'shift_manager'] },
+  { label: 'Duyệt đơn nghỉ', href: '/requests', icon: ClipboardCheck, roles: ['supermarket_owner', 'shift_manager'] },
+  { label: 'Duyệt đổi ca', href: '/swaps', icon: ArrowRightLeft, roles: ['supermarket_owner', 'shift_manager'] },
+  { label: 'Chấm công', href: '/attendance', icon: Clock, roles: ['supermarket_owner', 'shift_manager'] },
   
   { label: 'Tính lương', href: '/salary', icon: Wallet, roles: ['supermarket_owner'] },
   { label: 'Thưởng / Phạt', href: '/bonus', icon: Gift, roles: ['supermarket_owner'] },
   { label: 'Báo cáo', href: '/reports', icon: BarChart3, roles: ['supermarket_owner'] },
   
   { label: 'Lịch của tôi', href: '/my/schedule', icon: CalendarDays, roles: ['employee'] },
+  { label: 'Xin nghỉ ca', href: '/my/requests', icon: Calendar, roles: ['employee'] },
+  { label: 'Đổi ca', href: '/my/swaps', icon: ArrowRightLeft, roles: ['employee'] },
   { label: 'Chấm công của tôi', href: '/my/attendance', icon: Clock, roles: ['employee'] },
   { label: 'Thu nhập', href: '/my/salary', icon: Banknote, roles: ['employee'] },
 ];

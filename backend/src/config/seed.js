@@ -59,12 +59,12 @@ const seed = async () => {
   // ── Bước 3: Seed Shifts ───────────────────────────────────────────────────
   log('🕐 Seeding shifts...');
   const shiftsData = [
-    { name: 'Ca sáng', startTime: '07:00', endTime: '13:00', maxEmployees: 3, description: 'Ca làm việc buổi sáng' },
-    { name: 'Ca chiều', startTime: '13:00', endTime: '19:00', maxEmployees: 3, description: 'Ca làm việc buổi chiều' },
-    { name: 'Ca tối', startTime: '19:00', endTime: '23:00', maxEmployees: 2, description: 'Ca làm việc buổi tối' },
+    { name: 'Ca sáng', startTime: '07:00', endTime: '13:00', maxEmployees: 3, minEmployees: 2, description: 'Ca làm việc buổi sáng' },
+    { name: 'Ca chiều', startTime: '13:00', endTime: '19:00', maxEmployees: 3, minEmployees: 2, description: 'Ca làm việc buổi chiều' },
+    { name: 'Ca tối', startTime: '19:00', endTime: '23:00', maxEmployees: 2, minEmployees: 1, description: 'Ca làm việc buổi tối' },
   ];
   const createdShifts = await Shift.bulkCreate(shiftsData, { returning: true });
-  createdShifts.forEach((s) => log(`   + ${s.name} (${s.startTime}–${s.endTime}, tối đa ${s.maxEmployees} NV)`));
+  createdShifts.forEach((s) => log(`   + ${s.name} (${s.startTime}–${s.endTime}, yêu cầu ${s.minEmployees}-${s.maxEmployees} NV)`));
   log(`   ✅ ${createdShifts.length} ca làm việc đã được tạo.\n`);
 
   // ── Bước 4: Seed SalaryConfig ─────────────────────────────────────────────

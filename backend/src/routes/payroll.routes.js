@@ -7,7 +7,7 @@ router.get('/',               protect, authorize('supermarket_owner', 'shift_man
 router.get('/preview',        protect, authorize('supermarket_owner', 'shift_manager'), PayrollController.preview);
 router.get('/export-excel',   protect, authorize('supermarket_owner'), PayrollController.exportExcel);
 router.get('/:id',            protect, authorize('supermarket_owner', 'shift_manager'), PayrollController.getById);
-router.get('/:id/export-pdf', protect, authorize('supermarket_owner', 'shift_manager'), PayrollController.exportPDF);
+router.get('/:id/export-pdf', protect, authorize('supermarket_owner', 'shift_manager', 'employee'), PayrollController.exportPDF);
 
 router.post('/calculate',     protect, authorize('supermarket_owner'), PayrollController.createOrUpdateDraft);
 router.post('/calculate-all', protect, authorize('supermarket_owner'), PayrollController.createMonthlyPayroll);

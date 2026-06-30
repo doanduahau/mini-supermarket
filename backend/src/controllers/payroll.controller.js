@@ -101,16 +101,24 @@ const exportPDF = async (req, res, next) => {
       attendanceRecords: payrollJson.attendanceRecords || [],
       bonusRecords: payrollJson.bonusRecords || []
     };
-
+   
     const pdfBuffer = await generatePayrollPDF(payrollJson, payrollJson.employee);
 
-    const safeName = payrollJson.employee.fullName.replace(/\s+/g, '-').toLowerCase();
+    const safeName = payrollJson.employee.fullName
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .replace(/đ/g, "d")
+      .replace(/Đ/g, "D")
+      .replace(/\s+/g, "-")
+      .toLowerCase();
     
     res.setHeader('Content-Type', 'application/pdf');
     res.setHeader('Content-Disposition', `attachment; filename="phieu-luong-${safeName}-${payrollJson.month}-${payrollJson.year}.pdf"`);
     res.send(pdfBuffer);
   } catch (err) {
-    next(err);
+      console.error(err);
+      console.error(err.stack);
+      return res.status(500).json(err.message);
   }
 };
 

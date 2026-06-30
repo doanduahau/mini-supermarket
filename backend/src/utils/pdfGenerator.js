@@ -69,12 +69,12 @@ async function generatePayrollPDF(payroll, user) {
             a.shift?.name || 'N/A',
             a.checkIn ? new Date(a.checkIn).toLocaleTimeString('vi-VN', {hour: '2-digit', minute:'2-digit'}) : '-',
             a.checkOut ? new Date(a.checkOut).toLocaleTimeString('vi-VN', {hour: '2-digit', minute:'2-digit'}) : '-',
-            a.actualHours?.toFixed(1) || '0'
+            Number(a.actualHours || 0).toFixed(1)
           ])
         };
 
         // Add footer row for attendance
-        tableAttendance.rows.push(['Tổng cộng', '', '', '', `${payroll.totalHours?.toFixed(1)} giờ`]);
+        tableAttendance.rows.push(['Tổng cộng', '', '', '', `${Number(payroll.totalHours || 0).toFixed(1)} giờ`]);
 
         doc.table(tableAttendance, {
           prepareHeader: () => doc.font('Roboto-Bold').fontSize(10),

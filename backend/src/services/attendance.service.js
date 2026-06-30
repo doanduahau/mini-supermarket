@@ -213,7 +213,7 @@ const checkOut = async (attendanceId, checkOutTime, recordedBy) => {
   return getById(attendanceId);
 };
 
-const manualUpdate = async (id, { checkIn, checkOut, note }, updatedBy) => {
+const manualUpdate = async (id, { checkInTime, checkOutTime, note }, updatedBy) => {
   const attendance = await Attendance.findByPk(id, { include: [{ model: Shift, as: 'shift' }] });
   if (!attendance) throw Object.assign(new Error('Không tìm thấy bản ghi chấm công'), { statusCode: 404 });
 
@@ -223,11 +223,11 @@ const manualUpdate = async (id, { checkIn, checkOut, note }, updatedBy) => {
   const oldCheckOut = attendance.checkOut;
 
   const updates = {};
-  if (checkIn) updates.checkIn = new Date(checkIn);
-  if (checkOut) updates.checkOut = new Date(checkOut);
+  if (checkInTime) updates.checkIn = new Date(checkInTime);
+  if (checkOutTime) updates.checkOut = new Date(checkOutTime);
 
-  const finalCheckIn = checkIn ? new Date(checkIn) : attendance.checkIn;
-  const finalCheckOut = checkOut ? new Date(checkOut) : attendance.checkOut;
+  const finalCheckIn = checkInTime ? new Date(checkInTime) : attendance.checkIn;
+  const finalCheckOut = checkOutTime ? new Date(checkOutTime) : attendance.checkOut;
 
   if (finalCheckIn && finalCheckOut) {
     if ((new Date(finalCheckOut) - new Date(finalCheckIn)) < 0) {
